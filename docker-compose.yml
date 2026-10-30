@@ -1,0 +1,61 @@
+name: civic-climate
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-civic_climate}
+      POSTGRES_USER: ${POSTGRES_USER:-civic}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/10-postgis.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-civic} -d ${POSTGRES_DB:-civic_climate}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - .env
+    environment:
+      DB_ENGINE: postgres
+      POSTGRES_HOST: db
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py bootstrap_kolkata &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/app/backend
+      - ./data_pipelines:/app/data_pipelines
+      - ./ml:/app/ml
+      - media_data:/app/backend/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api/v1
+    environment:
+      VITE_API_BASE_URL: /api/v1
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  media_data:
