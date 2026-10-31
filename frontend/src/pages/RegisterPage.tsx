@@ -57,7 +57,7 @@ export function RegisterPage() {
   const normalized = error ? normalizeError(error) : null;
 
   return (
-    <div className="shell max-w-5xl space-y-8 py-10 sm:py-14">
+    <div className="shell max-w-5xl space-y-6 py-5 sm:py-8">
       <PageHeader
         eyebrow="Account"
         title="Create an account to report"

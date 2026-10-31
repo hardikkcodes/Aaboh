@@ -55,12 +55,13 @@ database.
 - **Docker stack unverified in this environment.** Compose, PostGIS, and the
   Nginx frontend image are provisioned and documented, but there is no Docker
   daemon on the build machine, so the stack has not been executed end to end.
-- **Development server only.** The Compose backend uses `runserver`; there is no
-  Gunicorn/Uvicorn, TLS termination, HSTS, secure-cookie configuration, or edge
-  rate limiting.
-- **No scheduler.** Ingestion is manual or external (Task Scheduler/cron).
-  Freshness depends on that external job; the API marks stale data but cannot
-  refresh itself.
+- **Production stack not yet run.** `docker-compose.prod.yml` adds Gunicorn,
+  secure settings and a scheduler, but it has not been executed. TLS must be
+  provided in front of it, and the local `docker-compose.yml` still uses
+  `runserver`.
+- **Scheduler only in the production stack.** Outside it, ingestion is manual or
+  external (Task Scheduler/cron); the API marks stale data but cannot refresh
+  itself.
 - **No caching layer.** Every read hits the database and recomputes insights.
   This is acceptable at current scale but will not handle high traffic.
 - **SQLite concurrency.** Development uses SQLite; concurrent writes can lock.

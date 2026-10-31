@@ -612,6 +612,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/IncidentEdit'
           description: ''
+  /api/v1/incidents/{id}/confirm/:
+    post:
+      operationId: v1_incidents_confirm_create
+      description: Resident vote on whether a report is still current.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentConfirmationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IncidentConfirmationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IncidentConfirmationRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentDetail'
+          description: ''
   /api/v1/incidents/{id}/history/:
     get:
       operationId: v1_incidents_history_retrieve
@@ -673,6 +708,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IncidentDetail'
+          description: ''
+  /api/v1/incidents/export/:
+    get:
+      operationId: v1_incidents_export_retrieve
+      description: 'Anonymous open data: no text, images or identities, and coordinates
+        near 110 m.'
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/incidents/live/:
+    get:
+      operationId: v1_incidents_live_retrieve
+      description: Current public reports as GeoJSON for the live city map.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/incidents/stats/:
+    get:
+      operationId: v1_incidents_stats_retrieve
+      description: Report patterns for an area or neighbourhood, from real reports
+        only.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
           description: ''
   /api/v1/incidents/summary/:
     get:
@@ -786,6 +877,28 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/locations/nearest/:
+    get:
+      operationId: v1_locations_nearest_retrieve
+      description: |-
+        Nearest named place to a browser-supplied coordinate.
+
+        Matching is a straight-line distance to stored locality points. It is not
+        reverse geocoding and never guesses a street address.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/locations/search/:
     get:
       operationId: v1_locations_search_retrieve
@@ -805,10 +918,65 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/notifications/:
+    get:
+      operationId: v1_notifications_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/notifications/read/:
+    post:
+      operationId: v1_notifications_read_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/place-status/:
     get:
       operationId: v1_place_status_retrieve
       description: Area-first status for a whole area or one of its neighbourhoods.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/planner/week/:
+    get:
+      operationId: v1_planner_week_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
       tags:
       - v1
       security:
@@ -861,6 +1029,78 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/spots/:
+    get:
+      operationId: v1_spots_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: v1_spots_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommunitySpotRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommunitySpotRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommunitySpotRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunitySpot'
+          description: ''
+  /api/v1/spots/{id}/:
+    delete:
+      operationId: v1_spots_destroy
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/system/config/:
     get:
       operationId: v1_system_config_retrieve
@@ -886,6 +1126,43 @@ paths:
       tags:
       - v1
       security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/system/models/:
+    get:
+      operationId: v1_system_models_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/today/:
+    get:
+      operationId: v1_today_retrieve
+      description: Personal daily brief for an area or neighbourhood.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
       - {}
       responses:
         '200':
@@ -939,6 +1216,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: ''
+  /api/v1/users/me/impact/:
+    get:
+      operationId: v1_users_me_impact_retrieve
+      description: A resident's own contribution summary. Never shown on public pages.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/users/me/preferences/:
     patch:
       operationId: v1_users_me_preferences_partial_update
@@ -966,6 +1260,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/users/me/routes/:
+    get:
+      operationId: v1_users_me_routes_list
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SavedRoute'
+          description: ''
+    post:
+      operationId: v1_users_me_routes_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavedRouteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SavedRouteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SavedRouteRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedRoute'
+          description: ''
+  /api/v1/users/me/routes/{id}/:
+    delete:
+      operationId: v1_users_me_routes_destroy
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/users/me/routes/{id}/status/:
+    get:
+      operationId: v1_users_me_routes_status_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
           description: ''
   /api/v1/users/me/saved-locations/:
     get:
@@ -1253,6 +1644,9 @@ components:
       - blocked_drainage
       - fallen_tree
       - road_disruption
+      - power_cut
+      - stagnant_water
+      - transport_disruption
       - environmental_hazard
       - other
       type: string
@@ -1262,8 +1656,78 @@ components:
         * `blocked_drainage` - Blocked drainage
         * `fallen_tree` - Fallen tree
         * `road_disruption` - Road disruption
+        * `power_cut` - Power cut
+        * `stagnant_water` - Stagnant water
+        * `transport_disruption` - Transport disruption
         * `environmental_hazard` - Environmental hazard
         * `other` - Other environmental incident
+    CommunitySpot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          $ref: '#/components/schemas/CommunitySpotKindEnum'
+        kind_label:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 120
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        is_owner:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - is_owner
+      - kind
+      - kind_label
+      - latitude
+      - longitude
+      - name
+    CommunitySpotKindEnum:
+      enum:
+      - cool_shade
+      - drinking_water
+      - shelter
+      type: string
+      description: |-
+        * `cool_shade` - Cool or shaded place
+        * `drinking_water` - Drinking water
+        * `shelter` - Rain or storm shelter
+    CommunitySpotRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/CommunitySpotKindEnum'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+      required:
+      - kind
+      - latitude
+      - longitude
+      - name
     IncidentAttachment:
       type: object
       properties:
@@ -1292,6 +1756,23 @@ components:
       - id
       - size_bytes
       - url
+    IncidentConfirmationKindEnum:
+      enum:
+      - still_there
+      - cleared
+      - wrong
+      type: string
+      description: |-
+        * `still_there` - Still there
+        * `cleared` - Cleared
+        * `wrong` - Looks wrong
+    IncidentConfirmationRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/IncidentConfirmationKindEnum'
+      required:
+      - kind
     IncidentCreate:
       type: object
       properties:
@@ -1308,6 +1789,14 @@ components:
         occurred_at:
           type: string
           format: date-time
+        water_depth:
+          oneOf:
+          - $ref: '#/components/schemas/WaterDepthEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        passability:
+          oneOf:
+          - $ref: '#/components/schemas/PassabilityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         latitude:
           type: number
           format: double
@@ -1324,7 +1813,6 @@ components:
       required:
       - area
       - category
-      - description
       - latitude
       - longitude
       - occurred_at
@@ -1342,11 +1830,18 @@ components:
           $ref: '#/components/schemas/CategoryEnum'
         description:
           type: string
-          minLength: 1
           maxLength: 2000
         occurred_at:
           type: string
           format: date-time
+        water_depth:
+          oneOf:
+          - $ref: '#/components/schemas/WaterDepthEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        passability:
+          oneOf:
+          - $ref: '#/components/schemas/PassabilityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         latitude:
           type: number
           format: double
@@ -1357,6 +1852,12 @@ components:
           format: double
           maximum: 180
           minimum: -180
+        location_accuracy_m:
+          type: number
+          format: double
+          maximum: 100000
+          minimum: 0
+          writeOnly: true
         address_text:
           type: string
           maxLength: 200
@@ -1370,7 +1871,6 @@ components:
       required:
       - area
       - category
-      - description
       - latitude
       - longitude
       - occurred_at
@@ -1392,6 +1892,38 @@ components:
         occurred_at:
           type: string
           format: date-time
+        water_depth:
+          oneOf:
+          - $ref: '#/components/schemas/WaterDepthEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        water_depth_label:
+          type: string
+          readOnly: true
+        passability:
+          oneOf:
+          - $ref: '#/components/schemas/PassabilityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        passability_label:
+          type: string
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        cleared_at:
+          type: string
+          format: date-time
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+        trust:
+          type: string
+          readOnly: true
+        confirmations:
+          type: object
+          additionalProperties: {}
+          readOnly: true
         status:
           $ref: '#/components/schemas/IncidentStatusEnum'
         status_label:
@@ -1473,22 +2005,26 @@ components:
       - attachments_count
       - category
       - category_label
+      - confirmations
       - created_at
-      - description
       - id
+      - is_active
       - is_owner
       - latitude
       - longitude
       - moderation_note
       - neighbourhood
       - occurred_at
+      - passability_label
       - point
       - potential_duplicates
       - source
       - status_history
       - status_label
+      - trust
       - updated_at
       - verification_state
+      - water_depth_label
     IncidentEdit:
       type: object
       properties:
@@ -1500,6 +2036,14 @@ components:
         occurred_at:
           type: string
           format: date-time
+        water_depth:
+          oneOf:
+          - $ref: '#/components/schemas/WaterDepthEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        passability:
+          oneOf:
+          - $ref: '#/components/schemas/PassabilityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         address_text:
           type: string
           description: Optional coarse location description. Do not enter a home address.
@@ -1509,7 +2053,6 @@ components:
           nullable: true
       required:
       - category
-      - description
       - occurred_at
     IncidentEditRequest:
       type: object
@@ -1518,11 +2061,18 @@ components:
           $ref: '#/components/schemas/CategoryEnum'
         description:
           type: string
-          minLength: 1
           maxLength: 2000
         occurred_at:
           type: string
           format: date-time
+        water_depth:
+          oneOf:
+          - $ref: '#/components/schemas/WaterDepthEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        passability:
+          oneOf:
+          - $ref: '#/components/schemas/PassabilityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         address_text:
           type: string
           description: Optional coarse location description. Do not enter a home address.
@@ -1533,7 +2083,6 @@ components:
           nullable: true
       required:
       - category
-      - description
       - occurred_at
     IncidentList:
       type: object
@@ -1553,6 +2102,38 @@ components:
         occurred_at:
           type: string
           format: date-time
+        water_depth:
+          oneOf:
+          - $ref: '#/components/schemas/WaterDepthEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        water_depth_label:
+          type: string
+          readOnly: true
+        passability:
+          oneOf:
+          - $ref: '#/components/schemas/PassabilityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        passability_label:
+          type: string
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        cleared_at:
+          type: string
+          format: date-time
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+        trust:
+          type: string
+          readOnly: true
+        confirmations:
+          type: object
+          additionalProperties: {}
+          readOnly: true
         status:
           $ref: '#/components/schemas/IncidentStatusEnum'
         status_label:
@@ -1614,19 +2195,23 @@ components:
       - attachments_count
       - category
       - category_label
+      - confirmations
       - created_at
-      - description
       - id
+      - is_active
       - is_owner
       - latitude
       - longitude
       - neighbourhood
       - occurred_at
+      - passability_label
       - point
       - source
       - status_label
+      - trust
       - updated_at
       - verification_state
+      - water_depth_label
     IncidentModerationRequest:
       type: object
       properties:
@@ -1682,7 +2267,7 @@ components:
           readOnly: true
         note:
           type: string
-          maxLength: 500
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -1691,6 +2276,7 @@ components:
       - created_at
       - from_status_label
       - id
+      - note
       - to_status
       - to_status_label
     InsightGenerateRequestRequest:
@@ -1778,6 +2364,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IncidentList'
+    PassabilityEnum:
+      enum:
+      - car
+      - two_wheeler
+      - walk
+      - none
+      type: string
+      description: |-
+        * `car` - Cars can pass
+        * `two_wheeler` - Two-wheelers can pass
+        * `walk` - Walking only
+        * `none` - Not passable
     PatchedIncidentEditRequest:
       type: object
       properties:
@@ -1785,11 +2383,18 @@ components:
           $ref: '#/components/schemas/CategoryEnum'
         description:
           type: string
-          minLength: 1
           maxLength: 2000
         occurred_at:
           type: string
           format: date-time
+        water_depth:
+          oneOf:
+          - $ref: '#/components/schemas/WaterDepthEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        passability:
+          oneOf:
+          - $ref: '#/components/schemas/PassabilityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         address_text:
           type: string
           description: Optional coarse location description. Do not enter a home address.
@@ -1807,6 +2412,13 @@ components:
           pattern: ^[-a-zA-Z0-9_]+$
         temperature_unit:
           $ref: '#/components/schemas/TemperatureUnitEnum'
+        alerts_enabled:
+          type: boolean
+        quiet_hours:
+          type: boolean
+        telegram_chat_id:
+          type: string
+          pattern: ^-?\d{1,20}$
     PatchedProfileUpdateRequest:
       type: object
       properties:
@@ -1893,6 +2505,37 @@ components:
       - label
       - latitude
       - longitude
+    SavedRoute:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        label:
+          type: string
+          maxLength: 80
+        points: {}
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - label
+      - points
+    SavedRouteRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+        points: {}
+      required:
+      - label
+      - points
     TemperatureUnitEnum:
       enum:
       - C
@@ -1937,6 +2580,18 @@ components:
       - is_moderator
       - preferences
       - role
+    WaterDepthEnum:
+      enum:
+      - ankle
+      - knee
+      - waist
+      - above_waist
+      type: string
+      description: |-
+        * `ankle` - Ankle deep
+        * `knee` - Knee deep
+        * `waist` - Waist deep
+        * `above_waist` - Above waist
   securitySchemes:
     cookieAuth:
       type: apiKey

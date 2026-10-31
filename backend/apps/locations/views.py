@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from django.db.models import Count, Q
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from apps.core.geometry import haversine_m
 from apps.core.schemas import DocumentedAPIView
 
 from .models import Area, GridCell, Neighbourhood
@@ -78,6 +80,71 @@ class AreaGridCellsView(DocumentedAPIView):
                 "available_versions": list(definitions.values_list("version", flat=True)),
                 "count": cells.count(),
                 "cells": GridCellSerializer(cells, many=True).data,
+            }
+        )
+
+
+class NearestPlaceView(DocumentedAPIView):
+    """Nearest named place to a browser-supplied coordinate.
+
+    Matching is a straight-line distance to stored locality points. It is not
+    reverse geocoding and never guesses a street address.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        latitude = request.query_params.get("lat")
+        longitude = request.query_params.get("lon")
+        if latitude is None or longitude is None:
+            raise ValidationError({"lat": "Both lat and lon are required."})
+        try:
+            lat = float(latitude)
+            lon = float(longitude)
+        except ValueError as exc:
+            raise ValidationError({"lat": "Latitude and longitude must be numeric."}) from exc
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            raise ValidationError({"lat": "Latitude or longitude is out of range."})
+
+        candidates: list[dict] = []
+        for item in Neighbourhood.objects.filter(is_active=True).select_related("area"):
+            distance_m = haversine_m(lat, lon, item.latitude, item.longitude)
+            candidates.append(
+                {
+                    "type": "neighbourhood",
+                    "id": str(item.id),
+                    "name": item.name,
+                    "slug": item.slug,
+                    "area_slug": item.area.slug,
+                    "latitude": item.latitude,
+                    "longitude": item.longitude,
+                    "distance_km": round(distance_m / 1000, 2),
+                }
+            )
+        for area in Area.objects.filter(is_active=True):
+            distance_m = haversine_m(lat, lon, area.centroid_lat, area.centroid_lon)
+            candidates.append(
+                {
+                    "type": "area",
+                    "id": str(area.id),
+                    "name": area.name,
+                    "slug": area.slug,
+                    "area_slug": area.slug,
+                    "latitude": area.centroid_lat,
+                    "longitude": area.centroid_lon,
+                    "distance_km": round(distance_m / 1000, 2),
+                }
+            )
+        candidates.sort(key=lambda item: item["distance_km"])
+        return Response(
+            {
+                "coordinate": {"latitude": lat, "longitude": lon},
+                "place": candidates[0] if candidates else None,
+                "candidates": candidates[:6],
+                "note": (
+                    "Matched by straight-line distance to published locality points. This is not "
+                    "reverse geocoding and not a street address."
+                ),
             }
         )
 

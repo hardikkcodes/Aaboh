@@ -17,6 +17,7 @@ from django.utils import timezone
 
 from apps.air_quality.models import AQIStation
 from apps.alerts.models import AlertStatus, OfficialAlert
+from apps.alerts.services import scope_matches
 from apps.core.geometry import haversine_m, parse_geometry
 from apps.core.models import DataSource
 from apps.core.quality import DataState, source_availability
@@ -151,8 +152,9 @@ def _build_context(area: Area, now) -> RuleContext:
         OfficialAlert.objects.filter(status=AlertStatus.ACTIVE)
         .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
         .select_related("source")
-        .order_by("-issued_at")[:10]
+        .order_by("-issued_at")[:500]
     )
+    alerts = [alert for alert in alerts if _alert_covers_area(alert, area)]
 
     stations = list(AQIStation.objects.filter(is_active=True).select_related("source"))
     nearest_station = None
@@ -181,18 +183,25 @@ def _build_context(area: Area, now) -> RuleContext:
     verified_incidents = list(
         IncidentReport.objects.filter(
             area=area,
-            status__in=[IncidentStatus.VERIFIED, IncidentStatus.RESOLVED],
+            is_public=True,
+            cleared_at__isnull=True,
+            status=IncidentStatus.VERIFIED,
             occurred_at__gte=now - timedelta(hours=12),
         )
         .exclude(category=IncidentCategory.OTHER)
+        .select_related("neighbourhood", "source")
         .order_by("-occurred_at")[:20]
     )
     unverified_incidents = list(
         IncidentReport.objects.filter(
             area=area,
+            is_public=True,
+            cleared_at__isnull=True,
             status__in=[IncidentStatus.SUBMITTED, IncidentStatus.UNDER_REVIEW],
             occurred_at__gte=now - timedelta(hours=6),
-        ).order_by("-created_at")[:20]
+        )
+        .select_related("source")
+        .order_by("-created_at")[:20]
     )
 
     lst_qs = EnvironmentalObservation.objects.filter(cell__area=area, lst_c__isnull=False)
@@ -226,6 +235,110 @@ def _build_context(area: Area, now) -> RuleContext:
         climate_metrics=climate_metrics,
         sources=sources,
     )
+
+
+def _alert_covers_area(alert: OfficialAlert, area: Area) -> bool:
+    """Scope an alert to the area using published text, then geometry if present."""
+    text = (alert.areas_text or "").lower()
+    if area.name.lower() in text or area.slug.lower() in text:
+        return True
+    if scope_matches(alert.areas_text):
+        return True
+    if alert.geometry and area.boundary:
+        try:
+            return parse_geometry(alert.geometry).intersects(parse_geometry(area.boundary))
+        except ValueError:
+            return False
+    return False
+
+
+def _module_availability(source, *, data_present: bool, missing_reason: str, extra_reason: str | None = None) -> dict:
+    availability = source_availability(source) if source else {"state": DataState.UNAVAILABLE}
+    if data_present:
+        state = availability["state"]
+        if state in {DataState.UNAVAILABLE, DataState.INVALID}:
+            state = DataState.STALE
+    else:
+        state = DataState.UNAVAILABLE
+    reason = extra_reason
+    if state == DataState.UNAVAILABLE:
+        reason = missing_reason
+    return {"module": "", "state": state, "reason": reason}
+
+
+def _availability_items(ctx: RuleContext) -> list[dict]:
+    """Per-module input availability for the briefing, with honest reasons."""
+    items = []
+
+    weather = _module_availability(
+        ctx.source("open_meteo"),
+        data_present=bool(ctx.current or ctx.hourly),
+        missing_reason="No weather forecast has been ingested for this area. Run fetch_weather.",
+        extra_reason=None if ctx.current else "Only forecast hours are available; no current observation.",
+    )
+    weather["module"] = "weather"
+    items.append(weather)
+
+    alerts_source = ctx.source("sachet") or ctx.source("imd")
+    alerts_availability = source_availability(alerts_source) if alerts_source else {"state": DataState.UNAVAILABLE}
+    alerts_healthy = alerts_availability["state"] in {DataState.AVAILABLE, DataState.PARTIAL}
+    if alerts_healthy:
+        alerts_state = alerts_availability["state"]
+        alerts_reason = (
+            None
+            if ctx.alerts
+            else "The official alert feed is reachable. No active warning covers this area right now."
+        )
+    elif ctx.alerts:
+        alerts_state = DataState.STALE
+        alerts_reason = "The latest official alert-feed refresh failed; stored warnings may be stale."
+    else:
+        alerts_state = DataState.UNAVAILABLE
+        alerts_reason = "No official alert feed has been ingested. Run fetch_alerts."
+    items.append({"module": "alerts", "state": alerts_state, "reason": alerts_reason})
+
+    air = _module_availability(
+        ctx.source("cpcb"),
+        data_present=ctx.station_measurement is not None,
+        missing_reason=(
+            "No CPCB station measurement within 24 hours of this area. Run fetch_cpcb."
+            if ctx.nearest_station is None
+            else f"The nearest CPCB station ({ctx.nearest_station.name}) has no measurement in the last 24 hours."
+        ),
+    )
+    air["module"] = "air_quality"
+    items.append(air)
+
+    environment = _module_availability(
+        ctx.source("landsat"),
+        data_present=bool(ctx.latest_lst_date and ctx.lst_values),
+        missing_reason="No Landsat land-surface temperature observations have been ingested.",
+    )
+    environment["module"] = "environment"
+    items.append(environment)
+
+    climate = _module_availability(
+        ctx.source("era5_land"),
+        data_present=bool(ctx.climate_metrics),
+        missing_reason="No ERA5-Land annual climate metrics have been ingested. Run fetch_climate.",
+    )
+    climate["module"] = "climate"
+    items.append(climate)
+
+    community_source = ctx.source("community_reports")
+    community_count = len(ctx.verified_incidents) + len(ctx.unverified_incidents)
+    items.append(
+        {
+            "module": "community",
+            "state": DataState.AVAILABLE if community_source else DataState.UNAVAILABLE,
+            "reason": (
+                "No public community reports fall inside the current rule windows."
+                if not community_count
+                else None
+            ),
+        }
+    )
+    return items
 
 
 def _alert_scope(alert: OfficialAlert, area: Area) -> bool:
@@ -656,9 +769,13 @@ def _climate_rule(ctx: RuleContext) -> dict | None:
 
 def _availability_rule(ctx: RuleContext) -> dict | None:
     checks = [
-        ("official alerts", "imd", "IMD_API_KEY is not configured"),
-        ("station air quality", "cpcb", "CPCB_API_KEY is not configured"),
-        ("satellite observations", "landsat", "Earth Engine credentials are not configured"),
+        ("official alerts", "sachet", "No official alert feed has been ingested. Run fetch_alerts."),
+        ("station air quality", "cpcb", "No CPCB station measurement is available. Run fetch_cpcb."),
+        (
+            "satellite observations",
+            "landsat",
+            "No Landsat observations have been ingested; Earth Engine credentials may be missing.",
+        ),
     ]
     missing = []
     evidence = []
@@ -725,6 +842,7 @@ def generate_insights(area: Area, *, now=None) -> dict:
         "count": len(insights),
         "ruleset_version": RULESET_VERSION,
         "insights": insights,
+        "data_availability": _availability_items(ctx),
         "thresholds": {
             "hot_apparent_c": HOT_APPARENT_C,
             "rain_24h_mm": RAIN_24H_MM,

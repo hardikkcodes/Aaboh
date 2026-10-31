@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 
 import { usePlaceStatus } from "../api/queries";
 import type {
@@ -9,6 +9,7 @@ import type {
 } from "../api/types";
 import { useTemperatureUnit } from "../auth/context";
 import { PlaceSearch } from "../components/place/PlaceSearch";
+import { SavePlaceButton } from "../components/place/SavedPlaces";
 import { StateBadge } from "../components/ui/DataState";
 import { ErrorState, LoadingPanel } from "../components/ui/Feedback";
 import { SectionHeading } from "../components/ui/SectionHeading";
@@ -78,6 +79,12 @@ function ModuleNote({ state, reason }: { state: DataState; reason?: string | nul
 export function PlaceStatusPage() {
   const { areaSlug = "kolkata", neighbourhoodSlug } = useParams();
   const unit = useTemperatureUnit();
+  const location = useLocation();
+  const arrivedFrom = (location.state ?? {}) as {
+    locatedNear?: boolean;
+    fromSavedPlace?: string;
+    distanceKm?: number;
+  };
   const query = usePlaceStatus(areaSlug, neighbourhoodSlug);
   const data = query.data;
 
@@ -114,10 +121,28 @@ export function PlaceStatusPage() {
           <p className="eyebrow">Area status · Kolkata</p>
           <h1 className="display-title mt-2">{data.place.label}</h1>
           <p className="prose-civic mt-2 max-w-2xl">{data.place.scope_note}</p>
+          {arrivedFrom.locatedNear ? (
+            <p className="mt-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs text-sky-900">
+              Nearest covered locality to your location
+              {typeof arrivedFrom.distanceKm === "number" ? ` (${arrivedFrom.distanceKm.toFixed(1)} km)` : ""}. Your
+              coordinates were used for this lookup only and are not stored.
+            </p>
+          ) : null}
+          {arrivedFrom.fromSavedPlace ? (
+            <p className="mt-2 text-xs text-ink-500">
+              Opened from your saved place “{arrivedFrom.fromSavedPlace}”.
+            </p>
+          ) : null}
         </div>
         <div className="w-full max-w-sm">
           <PlaceSearch />
           <p className="mt-2 text-xs text-ink-500">Search another area or neighbourhood to compare.</p>
+          <SavePlaceButton
+            label={data.place.label}
+            areaSlug={data.place.area.slug}
+            latitude={data.place.center.latitude}
+            longitude={data.place.center.longitude}
+          />
         </div>
       </div>
 
@@ -136,6 +161,11 @@ export function PlaceStatusPage() {
           </div>
           <div className="flex flex-col items-start gap-2 sm:items-end">
             <StateBadge state={status.state} />
+            {status.confidence ? (
+              <span className="chip border-ink-200 bg-white text-ink-700" title={status.confidence_note}>
+                Headline confidence: {status.confidence}
+              </span>
+            ) : null}
             <p className="text-xs text-ink-500">
               Updated {formatRelative(data.generated_at)} · {formatDateTime(data.generated_at)}
             </p>
@@ -179,7 +209,7 @@ export function PlaceStatusPage() {
         />
         <StatCard
           label="Nearest CPCB station"
-          value={data.air_quality.measurement?.aqi ? `AQI ${data.air_quality.measurement.aqi}` : "Unavailable"}
+          value={data.air_quality.measurement?.aqi != null ? `AQI ${data.air_quality.measurement.aqi}` : "Unavailable"}
           detail={
             data.air_quality.measurement
               ? `${data.air_quality.measurement.aqi_category} · ${data.air_quality.station?.name ?? "Station"} · ${formatRelative(data.air_quality.measurement.measured_at)}`
@@ -372,13 +402,24 @@ export function PlaceStatusPage() {
         <div className="panel p-5 sm:p-6">
           <SectionHeading eyebrow="Coverage" title="What exists for this place" />
           <p className="mt-2 text-xs leading-5 text-ink-500">
-            {data.coverage.available} of {data.coverage.total} modules have a recent record. Unavailable modules are
-            shown as missing, never filled with invented values.
+            {data.coverage.available} of {data.coverage.total} modules have a recent record
+            {data.coverage.stale ? `, ${data.coverage.stale} are stale` : ""}
+            {data.coverage.partial ? `, ${data.coverage.partial} are partial` : ""}
+            {data.coverage.unavailable ? `, ${data.coverage.unavailable} are unavailable` : ""}. The
+            headline confidence is <span className="font-semibold">{data.coverage.confidence}</span>. Missing
+            modules are shown as missing, never filled with invented values.
           </p>
           <ul className="mt-4 space-y-2">
             {data.coverage.modules.map((module) => (
-              <li key={module.key} className="flex items-center justify-between gap-3 rounded-xl border border-ink-100 px-3 py-2">
-                <span className="text-sm text-ink-700">{module.label}</span>
+              <li key={module.key} className="flex items-start justify-between gap-3 rounded-xl border border-ink-100 px-3 py-2">
+                <div>
+                  <p className="text-sm text-ink-700">{module.label}</p>
+                  {module.updated_at ? (
+                    <p className="mt-0.5 text-[0.68rem] text-ink-500">
+                      Last record {formatRelative(module.updated_at)}
+                    </p>
+                  ) : null}
+                </div>
                 <StateBadge state={module.state} />
               </li>
             ))}

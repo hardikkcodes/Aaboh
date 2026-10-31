@@ -4,12 +4,14 @@ import { Link, useParams } from "react-router-dom";
 import { fieldErrors, normalizeError } from "../api/client";
 import { useArea, useIncident, useModerateIncident } from "../api/queries";
 import { useAuth } from "../auth/context";
+import { ComplaintDraft } from "../components/live/ComplaintDraft";
+import { ReportConfirmButtons } from "../components/live/ReportConfirmButtons";
 import { IncidentMap } from "../components/map/IncidentMap";
 import { StateBadge } from "../components/ui/DataState";
 import { ErrorState, InlineSpinner, LoadingPanel } from "../components/ui/Feedback";
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionHeading } from "../components/ui/SectionHeading";
-import { MODERATOR_STATUSES } from "../lib/constants";
+import { MODERATOR_STATUSES, TRUST_META } from "../lib/constants";
 import { formatDateTime, formatNumber, formatRelative, titleCase } from "../lib/format";
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -111,7 +113,7 @@ export function ReportDetailPage() {
   }
 
   return (
-    <div className="shell space-y-10 py-10 sm:py-14">
+    <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
         eyebrow={`Community · ${report.area.name} · ${report.category_label}`}
         title={report.address_text || report.neighbourhood?.name || "Community report"}
@@ -153,7 +155,34 @@ export function ReportDetailPage() {
               </span>
               {report.is_owner ? <span className="chip border-sky-200 bg-sky-50 text-sky-800">Yours</span> : null}
             </div>
-            <p className="mt-4 whitespace-pre-line text-sm leading-7 text-ink-700">{report.description}</p>
+            {report.description ? (
+              <p className="mt-4 whitespace-pre-line text-sm leading-7 text-ink-700">{report.description}</p>
+            ) : null}
+            <div className="mt-4 rounded-xl border border-ink-100 bg-ink-50 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`chip ${TRUST_META[report.trust].classes}`}>{TRUST_META[report.trust].label}</span>
+                {report.water_depth_label ? (
+                  <span className="chip border-ink-200 bg-white text-ink-700">{report.water_depth_label}</span>
+                ) : null}
+                {report.passability_label ? (
+                  <span className="chip border-ink-200 bg-white text-ink-700">{report.passability_label}</span>
+                ) : null}
+              </div>
+              <p className="mt-2 text-xs text-ink-600">
+                {report.is_active
+                  ? `On the live map until ${formatDateTime(report.expires_at)}.`
+                  : report.cleared_at
+                    ? `Marked cleared ${formatRelative(report.cleared_at)}.`
+                    : "No longer on the live map."}{" "}
+                {report.confirmations.still_there} still there · {report.confirmations.cleared} cleared
+                {isModerator ? ` · ${report.confirmations.wrong} looks wrong` : ""}
+              </p>
+              {report.is_active ? (
+                <div className="mt-3">
+                  <ReportConfirmButtons reportId={report.id} isOwner={report.is_owner} />
+                </div>
+              ) : null}
+            </div>
             <dl className="mt-5 grid gap-3 border-t border-ink-100 pt-4 text-sm sm:grid-cols-2">
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-ink-500">Occurred</dt>
@@ -205,6 +234,8 @@ export function ReportDetailPage() {
               </div>
             ) : null}
           </article>
+
+          <ComplaintDraft report={report} />
 
           {report.attachments?.length ? (
             <section>
@@ -388,6 +419,7 @@ export function ReportDetailPage() {
                       onChange={(event) => setNote(event.target.value)}
                       placeholder="What evidence or check supports this decision?"
                     />
+                    <p className="mt-1 text-xs text-ink-400">Visible to moderators and the reporter, not the public.</p>
                   </div>
                   {feedback ? (
                     <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800" role="status">

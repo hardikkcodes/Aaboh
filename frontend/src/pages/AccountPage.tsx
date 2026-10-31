@@ -14,6 +14,7 @@ import {
   useUpdatePreferences,
 } from "../api/queries";
 import { useAuth } from "../auth/context";
+import { AlertSettings } from "../components/account/AlertSettings";
 import { LocationPicker } from "../components/map/CivicMap";
 import { StateBadge } from "../components/ui/DataState";
 import { EmptyState, ErrorState, InlineSpinner, LoadingPanel } from "../components/ui/Feedback";
@@ -136,6 +137,7 @@ function AccountContent() {
 
   return (
     <div className="space-y-12">
+      <AlertSettings user={current} />
       <section className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
         <form className="panel space-y-4 p-5 sm:p-6" onSubmit={(event) => void handleProfile(event)}>
           <SectionHeading eyebrow="Profile" title="Your account" />
@@ -436,7 +438,7 @@ export function AccountPage() {
   }
 
   return (
-    <div className="shell space-y-8 py-10 sm:py-14">
+    <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
         eyebrow="Account"
         title="Your ClimateSense account"

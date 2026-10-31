@@ -16,6 +16,7 @@ import requests
 
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
+AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 DEFAULT_TIMEZONE = "Asia/Kolkata"
 
 CURRENT_FIELDS = [
@@ -126,6 +127,24 @@ def fetch_forecast(
         "timeformat": "iso8601",
     }
     return _request(FORECAST_URL, params, timeout)
+
+
+def fetch_air_forecast(
+    latitude: float,
+    longitude: float,
+    *,
+    forecast_days: int = 3,
+    timezone: str = DEFAULT_TIMEZONE,
+    timeout: float = 30,
+) -> dict:
+    params = {
+        "latitude": round(latitude, 4),
+        "longitude": round(longitude, 4),
+        "hourly": "pm2_5,pm10",
+        "forecast_days": forecast_days,
+        "timezone": timezone,
+    }
+    return _request(AIR_QUALITY_URL, params, timeout)
 
 
 def fetch_archive(

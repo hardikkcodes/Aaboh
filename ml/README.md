@@ -135,3 +135,14 @@ python -m pytest tests -q
 
 Tests cover feature validation, chronological splitting, manifest creation and
 the refusal paths. They do not assert any model score.
+
+## Next-day models
+
+These are the only models with real labels today. Run from `ml/`:
+
+```bash
+python -m src.forecast.dataset --end YYYY-MM-DD
+python -m src.forecast.train
+```
+
+Copy the new `metrics.json` to `reports/next_day.json` to update the `/models` page.

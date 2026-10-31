@@ -92,11 +92,11 @@ export function AlertsPage() {
   });
 
   return (
-    <div className="shell space-y-10 py-10 sm:py-14">
+    <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
-        eyebrow="Official warnings · IMD"
+        eyebrow="Official warnings · SACHET / NDMA"
         title="Source-issued warnings only"
-        description="This page shows warnings published by the India Meteorological Department. It does not re-issue, reinterpret or downgrade them. An empty feed is not proof that conditions are safe."
+        description="Warnings issued by IMD, CWC and State Disaster Management Authorities, as published on the NDMA SACHET platform and filtered to Kolkata. Nothing here is re-issued or downgraded. An empty feed is not proof that conditions are safe."
         aside={alerts.data ? <StateBadge state={alerts.data.state} /> : null}
       />
 
@@ -108,15 +108,29 @@ export function AlertsPage() {
         <>
           <DataStateNotice
             state={alerts.data?.state ?? "UNAVAILABLE"}
-            title={alerts.data?.count ? "Official alert coverage is limited" : "Official alert feed is not available"}
-            reason={alerts.data?.reason ?? (alerts.data?.count ? null : alerts.data?.note)}
+            title={
+              alerts.data?.state === "UNAVAILABLE"
+                ? "Official alert feed is not available"
+                : "Official alert coverage is limited"
+            }
+            reason={alerts.data?.reason ?? null}
           >
             <p>
-              {alerts.data?.count
-                ? `${alerts.data.count} source-issued warning(s) are stored. Check the original bulletin for district-level scope and the latest update.`
-                : "No IMD warning records have been ingested. The platform does not generate substitute warnings from forecasts or community reports."}
+              {alerts.data?.feed_message ??
+                "The platform does not generate substitute warnings from forecasts or community reports."}
             </p>
           </DataStateNotice>
+
+          {alerts.data?.count ? (
+            <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              {alerts.data.feed_message ?? `${alerts.data.count} active official warning(s) cover the Kolkata scope.`}
+            </p>
+          ) : alerts.data?.state === "AVAILABLE" ? (
+            <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              {alerts.data.feed_message ??
+                "The official alert feed is reachable. No active warning covers Kolkata right now."}
+            </p>
+          ) : null}
 
           {alerts.data?.results.length ? (
             <>
@@ -167,9 +181,18 @@ export function AlertsPage() {
             </>
           ) : (
             <EmptyState
-              title="No official warnings are available to display"
-              description="The platform has no IMD records because the provider credential is not configured. It will not fill this space with forecasts or community reports. Follow IMD and KMC directly during severe weather."
-              action={<a className="btn-secondary" href="https://mausam.imd.gov.in/" target="_blank" rel="noreferrer">Visit IMD</a>}
+              title={
+                alerts.data?.state === "AVAILABLE"
+                  ? "No active official warning covers Kolkata"
+                  : "No official warnings are available to display"
+              }
+              description={
+                alerts.data?.state === "AVAILABLE"
+                  ? alerts.data.feed_message ??
+                    "The SACHET feed was refreshed and returned no Kolkata warning. This does not mean conditions are safe; follow IMD and KMC during severe weather."
+                  : "The official alert feed could not be read and no stored Kolkata warning is available. The platform will not fill this space with forecasts or community reports. Follow IMD and KMC directly during severe weather."
+              }
+              action={<a className="btn-secondary" href="https://sachet.ndma.gov.in/" target="_blank" rel="noreferrer">Visit SACHET</a>}
             />
           )}
 
@@ -181,11 +204,11 @@ export function AlertsPage() {
               },
               {
                 title: "Scope",
-                body: "A warning may cover a district larger than Kolkata. Read the bulletin's areas text and check whether its geometry intersects the city.",
+                body: "A warning may cover a district larger than Kolkata. SACHET publishes area text and a centroid, not a polygon, so alerts are matched on the published area text. Read the bulletin before acting.",
               },
               {
                 title: "No warning ≠ safe",
-                body: "Absence of an alert can reflect a gap in ingestion. The data-status page shows whether the feed is configured and healthy.",
+                body: "Absence of an alert can reflect a gap in ingestion. The data-status page shows whether the SACHET feed is reachable and when it last succeeded.",
               },
             ].map((item) => (
               <div key={item.title} className="panel p-5">
@@ -203,8 +226,7 @@ export function AlertsPage() {
         note={alerts.data?.note}
         extra={
           <p className="text-xs leading-5 text-ink-500">
-            Alert geometry is preserved when the provider supplies it. The platform never expands a
-            warning's geographic scope and never rewrites its severity.
+            Alert geometry is preserved when the provider supplies it; SACHET does not, so its alerts are scoped by the published area text. The platform never expands a warning's geographic scope and never rewrites its severity.
           </p>
         }
       />

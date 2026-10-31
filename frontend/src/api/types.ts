@@ -88,6 +88,17 @@ export interface SearchResult {
   longitude: number;
 }
 
+export interface NearestPlace extends SearchResult {
+  distance_km: number;
+}
+
+export interface NearestPlaceResponse {
+  coordinate: { latitude: number; longitude: number };
+  place: NearestPlace | null;
+  candidates: NearestPlace[];
+  note: string;
+}
+
 export type GeoJSONGeometry =
   | { type: "Point"; coordinates: number[] }
   | { type: "Polygon"; coordinates: number[][][] }
@@ -189,10 +200,14 @@ export interface Alert {
 
 export interface AlertsResponse {
   state: DataState;
+  provider?: string | null;
   source: SourceSummary;
   last_success_at: string | null;
+  last_attempt_at?: string | null;
   count: number;
   results: Alert[];
+  scope_terms?: string[];
+  feed_message?: string;
   note: string;
   reason: string | null;
 }
@@ -209,6 +224,9 @@ export interface AQIMeasurement {
   so2: number | null;
   co: number | null;
   o3: number | null;
+  nh3?: number | null;
+  aqi_basis?: Record<string, unknown>;
+  units?: Record<string, string>;
   quality_status: string;
   quality_flags: string[];
 }
@@ -467,12 +485,57 @@ export interface StatusHistoryEntry {
   created_at: string;
 }
 
+export type ReportTrust = "unconfirmed" | "resident_confirmed" | "moderator_verified";
+export type ConfirmationKind = "still_there" | "cleared" | "wrong";
+
+export interface LiveReportProperties {
+  id: string;
+  category: string;
+  category_label: string;
+  description: string;
+  place: string;
+  water_depth: string;
+  water_depth_label: string;
+  passability: string;
+  passability_label: string;
+  trust: ReportTrust;
+  still_there: number;
+  cleared: number;
+  occurred_at: string;
+  expires_at: string;
+}
+
+export interface LiveReportFeature {
+  type: "Feature";
+  geometry: { type: "Point"; coordinates: [number, number] };
+  properties: LiveReportProperties;
+}
+
+export interface LiveMapResponse {
+  type: "FeatureCollection";
+  generated_at: string;
+  area: { slug: string; name: string };
+  count: number;
+  latest_report_at: string | null;
+  features: LiveReportFeature[];
+  note: string;
+}
+
 export interface Incident {
   id: string;
   category: string;
   category_label: string;
   description: string;
   occurred_at: string;
+  water_depth: string;
+  water_depth_label: string;
+  passability: string;
+  passability_label: string;
+  expires_at: string | null;
+  cleared_at: string | null;
+  is_active: boolean;
+  trust: ReportTrust;
+  confirmations: { still_there: number; cleared: number; wrong: number };
   status: string;
   status_label: string;
   verification_state: "UNVERIFIED" | "VERIFIED" | string;
@@ -550,7 +613,7 @@ export interface InsightsResponse {
   insights: Insight[];
   data_availability: { module: string; state: DataState; reason?: string | null }[];
   filters?: { rule: string | null; severity: string | null };
-  thresholds?: Record<string, number>;
+  thresholds?: Record<string, number | Record<string, number>>;
   methodology?: string;
   disclaimer?: string;
   persisted?: number;
@@ -587,7 +650,185 @@ export interface User {
   role: string;
   is_moderator: boolean;
   date_joined: string;
-  preferences: { temperature_unit: "C" | "F"; default_area: string | null };
+  preferences: {
+    temperature_unit: "C" | "F";
+    default_area: string | null;
+    alerts_enabled?: boolean;
+    quiet_hours?: boolean;
+    telegram_chat_id?: string;
+  };
+}
+
+export type SignalLevel = "typical" | "info" | "caution" | "warning" | "unknown";
+
+export interface RainSoon {
+  total_mm: number | null;
+  max_probability_pct: number | null;
+  next_rain_at: string | null;
+}
+
+export interface OutdoorWindow {
+  start: string;
+  end: string;
+  max_heat_index_c: number;
+}
+
+export interface TodayTip {
+  key: string;
+  level: SignalLevel;
+  params: Record<string, string | number>;
+  text: string;
+}
+
+export interface TimelineHour {
+  time: string;
+  temperature_c: number | null;
+  heat_index_c: number | null;
+  rain_mm: number | null;
+  rain_probability_pct: number | null;
+  condition: { code: number | null; label: string };
+}
+
+export interface CommunitySpot {
+  id: string;
+  kind: "cool_shade" | "drinking_water" | "shelter";
+  kind_label: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  is_owner: boolean;
+  created_at: string;
+}
+
+export interface ReportHistory {
+  window_days: number;
+  total: number;
+  by_category: Record<string, number>;
+  by_month: Record<string, number>;
+  recurring_water_spots: { name: string; slug: string; reports: number; days: number }[];
+  note: string;
+}
+
+export interface ModelStatus {
+  trained: {
+    dataset: { rows: number; train_period: [string, string]; test_period: [string, string] };
+    heat: {
+      model: number;
+      baseline_raw_forecast: number;
+      baseline_fixed_offset: number;
+      improvement_pct: number;
+      promotable: boolean;
+    };
+    rain: {
+      model: number;
+      baseline_calibrated_forecast: number;
+      improvement_pct: number;
+      heavy_days_in_test: number;
+      promotable: boolean;
+    };
+    limitations: string[];
+  } | null;
+  waiting: {
+    key: string;
+    name: string;
+    note: string;
+    progress: { label: string; value: number; target: number }[];
+  }[];
+}
+
+export interface TodayResponse {
+  generated_at: string;
+  place: { label: string; area: string; neighbourhood: string | null };
+  state: DataState;
+  retrieved_at: string | null;
+  season: "air" | "heat" | "monsoon" | "festive";
+  rain: RainSoon;
+  heat: {
+    peak_heat_index_c: number | null;
+    level: SignalLevel;
+    night_low_c: number | null;
+    note: string;
+  };
+  best_outdoor_window: OutdoorWindow | null;
+  cleanest_air_window: { start: string; end: string; pm25: number } | null;
+  timeline: TimelineHour[];
+  air: { state: DataState; level: SignalLevel; aqi: number | null };
+  alerts: { state: DataState; count: number; feed_message: string };
+  reports: { nearby: number; city: number; radius_km: number };
+  tips: TodayTip[];
+  note: string;
+}
+
+export interface WeekPlanDay {
+  date: string;
+  rating: "good" | "fair" | "poor";
+  rain_mm: number;
+  max_rain_probability_pct: number;
+  peak_heat_index_c: number | null;
+  condition: { code: number | null; label: string };
+  best_window: OutdoorWindow | null;
+  hours_covered: number;
+}
+
+export interface WeekPlanResponse {
+  area: { slug: string; name: string };
+  generated_at: string;
+  state: DataState;
+  retrieved_at: string | null;
+  days: WeekPlanDay[];
+  note: string;
+}
+
+export interface SavedRoute {
+  id: string;
+  label: string;
+  points: [number, number][];
+  created_at: string;
+}
+
+export interface RouteReport {
+  id: string;
+  category_label: string;
+  place: string;
+  water_depth_label: string;
+  passability_label: string;
+  trust: ReportTrust;
+  occurred_at: string;
+  distance_m: number;
+}
+
+export interface RouteStatus {
+  route: { id: string; label: string; points: [number, number][] };
+  checked_at: string;
+  summary: "serious_reports" | "reports" | "no_reports";
+  buffer_m: number;
+  official_alerts: number;
+  rain: RainSoon;
+  reports: RouteReport[];
+  note: string;
+}
+
+export interface AppNotification {
+  id: string;
+  kind: string;
+  title: string;
+  body: string;
+  link: string;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface NotificationsResponse {
+  unread: number;
+  results: AppNotification[];
+}
+
+export interface ImpactResponse {
+  reports: number;
+  reports_confirmed_by_others: number;
+  confirmations_given: number;
+  score: number;
+  level: "new_neighbour" | "reporter" | "street_watcher" | "local_guardian";
 }
 
 export interface AuthResponse {
@@ -717,6 +958,9 @@ export interface PlaceAirQuality {
     aqi_category: string;
     pm25: number | null;
     pm10: number | null;
+    nh3?: number | null;
+    aqi_basis?: Record<string, unknown>;
+    units?: Record<string, string>;
     quality_status: string;
   } | null;
   distance_km: number | null;
@@ -747,6 +991,7 @@ export interface PlaceAlerts {
   results: PlaceAlert[];
   source: SourceSummary;
   last_success_at: string | null;
+  feed_message?: string;
   note: string;
   reason: string | null;
 }
@@ -784,6 +1029,8 @@ export interface PlaceStatusResponse {
     headline: string;
     reasons: string[];
     state: DataState;
+    confidence?: "low" | "medium" | "high";
+    confidence_note?: string;
   };
   weather: PlaceWeather;
   rain: PlaceRain;
@@ -795,8 +1042,12 @@ export interface PlaceStatusResponse {
   reports: PlaceReports;
   coverage: {
     available: number;
+    stale: number;
+    partial: number;
+    unavailable: number;
     total: number;
-    modules: { key: string; label: string; state: DataState }[];
+    confidence?: "low" | "medium" | "high";
+    modules: { key: string; label: string; state: DataState; updated_at: string | null }[];
   };
   disclaimer: string;
 }

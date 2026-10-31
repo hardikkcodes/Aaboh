@@ -1,7 +1,7 @@
 import "leaflet/dist/leaflet.css";
 
 import { useEffect, type ReactNode } from "react";
-import { CircleMarker, MapContainer, Polygon, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { Circle, CircleMarker, MapContainer, Polygon, TileLayer, useMap, useMapEvents } from "react-leaflet";
 
 import type { GeoJSONGeometry } from "../../api/types";
 import { KOLKATA_CENTER, OSM_ATTRIBUTION } from "../../lib/constants";
@@ -77,8 +77,22 @@ function FitToBoundary({ geometry }: { geometry: GeoJSONGeometry | null | undefi
     if (!rings.length) return;
     const points = rings.flat();
     if (!points.length) return;
-    map.fitBounds(points, { padding: [18, 18] });
+    // Not animated: Leaflet ignores view changes during an animation, which would
+    // lose a GPS point that arrives just after the page opens.
+    map.fitBounds(points, { padding: [18, 18], animate: false });
   }, [geometry, map]);
+  return null;
+}
+
+const PICKER_ZOOM = 16;
+
+/** Zooms in on the chosen point so it can be moved onto the right road. */
+function FocusPoint({ latitude, longitude }: { latitude: number | null; longitude: number | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (latitude === null || longitude === null) return;
+    map.setView([latitude, longitude], Math.max(map.getZoom(), PICKER_ZOOM), { animate: false });
+  }, [latitude, longitude, map]);
   return null;
 }
 
@@ -88,12 +102,14 @@ export function LocationPicker({
   onChange,
   boundary,
   height = "360px",
+  accuracy = null,
 }: {
   latitude: number | null;
   longitude: number | null;
   onChange: (latitude: number, longitude: number) => void;
   boundary?: GeoJSONGeometry | null;
   height?: string;
+  accuracy?: number | null;
 }) {
   const hasPoint = latitude !== null && longitude !== null;
   return (
@@ -103,9 +119,17 @@ export function LocationPicker({
         zoom={hasPoint ? 14 : 11}
         height={height}
       >
-        <FitToBoundary geometry={boundary} />
+        <FitToBoundary geometry={hasPoint ? null : boundary} />
+        <FocusPoint latitude={latitude} longitude={longitude} />
         <BoundaryLayer geometry={boundary} />
         <ClickHandler onPick={onChange} />
+        {hasPoint && accuracy ? (
+          <Circle
+            center={[latitude as number, longitude as number]}
+            radius={accuracy}
+            pathOptions={{ color: "#2563eb", weight: 1, fillColor: "#2563eb", fillOpacity: 0.12 }}
+          />
+        ) : null}
         {hasPoint ? (
           <CircleMarker
             center={[latitude as number, longitude as number]}
@@ -116,8 +140,8 @@ export function LocationPicker({
       </CivicMap>
       <p className="mt-2 text-xs text-ink-500">
         {hasPoint
-          ? `Selected point: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}. Click the map to move it.`
-          : "Click the map to place the report location. Do not use an exact home address."}
+          ? `Selected point: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}. Tap the map to move it.`
+          : "Tap the map to place the report location. Do not use an exact home address."}
       </p>
     </div>
   );

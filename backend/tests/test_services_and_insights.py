@@ -121,7 +121,7 @@ def test_rainfall_forecast_derives_from_weather_records(api_client, weather_loca
 def test_alerts_air_quality_environment_and_heat_report_unavailable(api_client, area):
     alerts = api_client.get("/api/v1/alerts/").json()
     assert alerts["state"] == "UNAVAILABLE"
-    assert "IMD" in alerts["reason"]
+    assert "alert feed is unavailable" in alerts["reason"]
 
     air = api_client.get("/api/v1/air-quality/stations/").json()
     assert air["state"] == "UNAVAILABLE"

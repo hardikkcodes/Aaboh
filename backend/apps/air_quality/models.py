@@ -42,6 +42,24 @@ class AQIStation(models.Model):
         return self.name
 
 
+class AirForecastHour(models.Model):
+    """Modelled city-scale particulate forecast. Not a station measurement."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    area = models.ForeignKey("locations.Area", on_delete=models.CASCADE, related_name="air_forecast")
+    source = models.ForeignKey("core.DataSource", on_delete=models.PROTECT, related_name="air_forecast")
+    valid_time = models.DateTimeField()
+    retrieved_at = models.DateTimeField()
+    pm25 = models.FloatField(null=True, blank=True, validators=[MinValueValidator(0)])
+    pm10 = models.FloatField(null=True, blank=True, validators=[MinValueValidator(0)])
+
+    class Meta:
+        ordering = ["valid_time"]
+        constraints = [
+            models.UniqueConstraint(fields=["area", "valid_time"], name="uniq_air_forecast_area_time")
+        ]
+
+
 class AQIMeasurement(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     station = models.ForeignKey(AQIStation, on_delete=models.CASCADE, related_name="measurements")
@@ -56,6 +74,7 @@ class AQIMeasurement(models.Model):
     so2 = models.FloatField(null=True, blank=True, validators=[MinValueValidator(0)])
     co = models.FloatField(null=True, blank=True, validators=[MinValueValidator(0)])
     o3 = models.FloatField(null=True, blank=True, validators=[MinValueValidator(0)])
+    nh3 = models.FloatField(null=True, blank=True, validators=[MinValueValidator(0)])
     quality_status = models.CharField(max_length=20, choices=DataState.CHOICES, default=DataState.AVAILABLE)
     quality_flags = models.JSONField(default=list, blank=True)
     raw = models.JSONField(default=dict, blank=True)

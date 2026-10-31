@@ -10,9 +10,12 @@ from rest_framework import serializers
 from apps.core.geometry import parse_geometry, point_geojson
 from apps.locations.models import Area
 
-from .models import SavedLocation, UserPreference
+from .models import SavedLocation, SavedRoute, UserPreference
 
 User = get_user_model()
+MIN_ROUTE_POINTS = 2
+MAX_ROUTE_POINTS = 12
+MAX_SAVED_ROUTES = 5
 
 
 class UserSummarySerializer(serializers.ModelSerializer):
@@ -46,6 +49,9 @@ class UserSerializer(serializers.ModelSerializer):
         return {
             "temperature_unit": preference.temperature_unit,
             "default_area": preference.default_area.slug if preference.default_area else None,
+            "alerts_enabled": preference.alerts_enabled,
+            "quiet_hours": preference.quiet_hours,
+            "telegram_chat_id": preference.telegram_chat_id,
         }
 
 
@@ -130,6 +136,46 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 class PreferenceUpdateSerializer(serializers.Serializer):
     default_area = serializers.SlugField(required=False, allow_null=True, allow_blank=True)
     temperature_unit = serializers.ChoiceField(choices=["C", "F"], required=False)
+    alerts_enabled = serializers.BooleanField(required=False)
+    quiet_hours = serializers.BooleanField(required=False)
+    telegram_chat_id = serializers.RegexField(r"^-?\d{1,20}$", required=False, allow_blank=True)
+
+
+class SavedRouteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SavedRoute
+        fields = ["id", "label", "points", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+    def validate_label(self, value: str) -> str:
+        value = value.strip()
+        if SavedRoute.objects.filter(user=self.context["request"].user, label=value).exists():
+            raise serializers.ValidationError("You already have a route with this name.")
+        return value
+
+    def validate_points(self, value):
+        if not isinstance(value, list) or not MIN_ROUTE_POINTS <= len(value) <= MAX_ROUTE_POINTS:
+            raise serializers.ValidationError(
+                f"Draw a route with {MIN_ROUTE_POINTS} to {MAX_ROUTE_POINTS} points."
+            )
+        cleaned = []
+        for point in value:
+            if not isinstance(point, list) or len(point) != 2:
+                raise serializers.ValidationError("Each point must be [latitude, longitude].")
+            try:
+                latitude, longitude = float(point[0]), float(point[1])
+            except (TypeError, ValueError) as exc:
+                raise serializers.ValidationError("Coordinates must be numbers.") from exc
+            if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+                raise serializers.ValidationError("Coordinates are out of range.")
+            cleaned.append([round(latitude, 5), round(longitude, 5)])
+        return cleaned
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        if SavedRoute.objects.filter(user=user).count() >= MAX_SAVED_ROUTES:
+            raise serializers.ValidationError(f"Saved-route limit reached ({MAX_SAVED_ROUTES}).")
+        return SavedRoute.objects.create(user=user, **validated_data)
 
 
 class SavedLocationSerializer(serializers.ModelSerializer):

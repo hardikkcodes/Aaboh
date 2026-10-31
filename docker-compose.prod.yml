@@ -1,0 +1,83 @@
+# Production stack. Run with:
+#   docker compose -f docker-compose.prod.yml up -d --build
+# Put a TLS-terminating proxy or hosting platform in front of the frontend port.
+name: civic-climate-prod
+
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: backend/Dockerfile
+  env_file:
+    - .env
+  environment: &backend-env
+    DJANGO_DEBUG: "false"
+    DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?Set DJANGO_ALLOWED_HOSTS}
+    DJANGO_NUM_PROXIES: ${DJANGO_NUM_PROXIES:-2}
+    DJANGO_CACHE_DIR: /tmp/django-cache
+    DB_ENGINE: postgres
+    POSTGRES_HOST: db
+  restart: unless-stopped
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-civic_climate}
+      POSTGRES_USER: ${POSTGRES_USER:-civic}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/10-postgis.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-civic} -d ${POSTGRES_DB:-civic_climate}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  backend:
+    <<: *backend
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py bootstrap_kolkata &&
+             exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 60"
+    environment:
+      <<: *backend-env
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?Set DJANGO_ALLOWED_HOSTS},backend
+    volumes:
+      - media_data:/app/backend/media
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-H", "Host: backend", "http://127.0.0.1:8000/api/v1/health/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  scheduler:
+    <<: *backend
+    command: ["sh", "scripts/ingest_loop.sh"]
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api/v1
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - media_data:/usr/share/nginx/media:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  media_data:

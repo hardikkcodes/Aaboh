@@ -1,6 +1,12 @@
 from django.urls import path
 
-from .views import AreaDetailView, AreaGridCellsView, AreaListView, LocationSearchView
+from .views import (
+    AreaDetailView,
+    AreaGridCellsView,
+    AreaListView,
+    LocationSearchView,
+    NearestPlaceView,
+)
 
 app_name = "locations"
 
@@ -9,4 +15,5 @@ urlpatterns = [
     path("areas/<slug:slug>/", AreaDetailView.as_view(), name="area-detail"),
     path("areas/<slug:slug>/grid-cells/", AreaGridCellsView.as_view(), name="area-grid-cells"),
     path("locations/search/", LocationSearchView.as_view(), name="location-search"),
+    path("locations/nearest/", NearestPlaceView.as_view(), name="location-nearest"),
 ]

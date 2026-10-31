@@ -138,7 +138,7 @@ export function HeatPage() {
   const firstFeature = features[0];
 
   return (
-    <div className="shell space-y-10 py-10 sm:py-14">
+    <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
         eyebrow="Heat & environment · Landsat"
         title="Land-surface temperature, vegetation and built-up surfaces"

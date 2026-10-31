@@ -34,7 +34,7 @@ export default {
       },
       fontFamily: {
         sans: ["Inter", "Segoe UI", "system-ui", "sans-serif"],
-        display: ["Fraunces", "Georgia", "serif"],
+        display: ["Inter", "Segoe UI", "system-ui", "sans-serif"],
       },
       boxShadow: {
         panel: "0 1px 2px rgba(17,31,28,0.05), 0 12px 32px -24px rgba(17,31,28,0.35)",

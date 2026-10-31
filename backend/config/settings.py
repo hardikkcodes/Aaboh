@@ -11,6 +11,7 @@ import os
 import sys
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -35,8 +36,16 @@ def env_list(name: str, default: str = "") -> list[str]:
 
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-insecure-key-do-not-use-in-production")
-DEBUG = env_bool("DJANGO_DEBUG", True)
+DEBUG = env_bool("DJANGO_DEBUG", False)
+if not DEBUG and (SECRET_KEY.startswith("dev-only") or len(SECRET_KEY) < 50):
+    raise ImproperlyConfigured(
+        "Set DJANGO_SECRET_KEY to a random value of at least 50 characters, "
+        "or set DJANGO_DEBUG=true for local development."
+    )
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+# Trusted reverse proxies in front of Django. Zero ignores X-Forwarded-For, which
+# clients can forge to escape rate limits.
+NUM_PROXIES = int(os.getenv("DJANGO_NUM_PROXIES", "0"))
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -62,11 +71,13 @@ INSTALLED_APPS = [
     "apps.rainfall",
     "apps.climate",
     "apps.intelligence",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -116,6 +127,16 @@ else:
         }
     }
 
+# Rate limits live in the cache, so multiple Gunicorn workers need a shared one.
+CACHE_DIR = os.getenv("DJANGO_CACHE_DIR", "")
+if CACHE_DIR:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+            "LOCATION": CACHE_DIR,
+        }
+    }
+
 AUTH_USER_MODEL = "accounts.User"
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -160,6 +181,7 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 50,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.core.exceptions.api_exception_handler",
+    "NUM_PROXIES": NUM_PROXIES,
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
@@ -169,8 +191,21 @@ REST_FRAMEWORK = {
         "user": "600/min",
         "auth": "10/min",
         "incident_create": "12/hour",
+        "incident_confirm": "60/hour",
     },
 }
+
+if not DEBUG:
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = ["rest_framework.renderers.JSONRenderer"]
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", True)
+    SECURE_REDIRECT_EXEMPT = [r"^api/v1/health/"]
+    SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_SECURE_HSTS_SECONDS", "2592000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", False)
+    SECURE_HSTS_PRELOAD = env_bool("DJANGO_SECURE_HSTS_PRELOAD", False)
+    if NUM_PROXIES:
+        SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Civic Climate Intelligence API",
@@ -220,6 +255,17 @@ CPCB_API_KEY = os.getenv("CPCB_API_KEY", "")
 CPCB_RESOURCE_ID = os.getenv("CPCB_RESOURCE_ID", "3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69")
 CPCB_BASE_URL = os.getenv("CPCB_BASE_URL", "https://api.data.gov.in/resource")
 CPCB_TIMEOUT = int(os.getenv("CPCB_TIMEOUT_SECONDS", "60"))
+# Cities the CPCB resource is queried for by default. The national feed also
+# works (--all-cities) but Kolkata/Howrah keep the stored footprint local.
+CPCB_CITIES = env_list("CPCB_CITIES", "Kolkata,Howrah")
+SACHET_BASE_URL = os.getenv("SACHET_BASE_URL", "https://sachet.ndma.gov.in")
+SACHET_TIMEOUT = int(os.getenv("SACHET_TIMEOUT_SECONDS", "45"))
+# Terms used to decide whether a national SACHET alert covers Kolkata. The feed
+# publishes area text only, so this is a word match, not a geospatial query.
+SACHET_SCOPE_TERMS = env_list(
+    "SACHET_SCOPE_TERMS", "kolkata,howrah,haora,hooghly,24 parganas,west bengal"
+)
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 GEE_PROJECT_ID = os.getenv("GEE_PROJECT_ID", "")
 GEE_SERVICE_ACCOUNT_EMAIL = os.getenv("GEE_SERVICE_ACCOUNT_EMAIL", "")
 GEE_SERVICE_ACCOUNT_KEY_FILE = os.getenv("GEE_SERVICE_ACCOUNT_KEY_FILE", "")

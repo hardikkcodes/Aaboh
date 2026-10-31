@@ -57,7 +57,7 @@ export function MethodologyPage() {
   const moduleEntries = data ? Object.entries(data.modules) : [];
 
   return (
-    <div className="shell space-y-14 py-10 sm:py-14">
+    <div className="shell space-y-14 py-5 sm:py-8">
       <PageHeader
         eyebrow="Methodology · limits · provenance"
         title="How this platform knows what it knows"
@@ -300,9 +300,20 @@ export function MethodologyPage() {
                 return (
                   <div key={key} className="rounded-xl border border-ink-100 bg-ink-50 p-3">
                     <dt className="text-[0.65rem] uppercase tracking-wide text-ink-500">{meta.label}</dt>
-                    <dd className="mt-1 text-sm font-semibold text-ink-900">
-                      {formatNumber(value, meta.digits)} {meta.unit}
-                    </dd>
+                    {typeof value === "number" ? (
+                      <dd className="mt-1 text-sm font-semibold text-ink-900">
+                        {formatNumber(value, meta.digits)} {meta.unit}
+                      </dd>
+                    ) : (
+                      <dd className="mt-1 space-y-0.5">
+                        {Object.entries(value).map(([band, threshold]) => (
+                          <span key={band} className="block text-xs text-ink-700">
+                            <span className="font-semibold text-ink-900">{titleCase(band)}</span>{" "}
+                            at {formatNumber(threshold, meta.digits)} {meta.unit}
+                          </span>
+                        ))}
+                      </dd>
+                    )}
                   </div>
                 );
               })}
@@ -339,7 +350,7 @@ export function MethodologyPage() {
         </ul>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] [&>*]:min-w-0">
         <div>
           <SectionHeading
             eyebrow="Sources"

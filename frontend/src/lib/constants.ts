@@ -1,37 +1,7 @@
-import type { DataState } from "../api/types";
+import type { DataState, ReportTrust } from "../api/types";
 
 export const AREA_SLUG = "kolkata";
 export const AREA_NAME = "Kolkata";
-
-export const NAV_ITEMS = [
-  { to: "/", label: "Overview", end: true },
-  { to: "/weather", label: "Weather" },
-  { to: "/alerts", label: "Official alerts" },
-  { to: "/heat", label: "Heat & environment" },
-  { to: "/rainfall", label: "Rainfall" },
-  { to: "/air-quality", label: "Air quality" },
-  { to: "/climate", label: "Climate" },
-  { to: "/reports", label: "Community" },
-  { to: "/insights", label: "Insights" },
-] as const;
-
-/** Desktop keeps the daily-use destinations visible. */
-export const PRIMARY_NAV_ITEMS = [
-  { to: "/", label: "Overview", end: true },
-  { to: "/weather", label: "Weather" },
-  { to: "/alerts", label: "Alerts" },
-  { to: "/reports", label: "Community" },
-  { to: "/insights", label: "Insights" },
-] as const;
-
-/** Everything else lives behind one compact menu. */
-export const SECONDARY_NAV_ITEMS = [
-  { to: "/heat", label: "Heat & environment" },
-  { to: "/rainfall", label: "Rainfall" },
-  { to: "/air-quality", label: "Air quality" },
-  { to: "/climate", label: "Climate" },
-  { to: "/methodology", label: "Methodology" },
-] as const;
 
 export const INCIDENT_CATEGORIES = [
   { value: "waterlogging", label: "Waterlogging" },
@@ -39,9 +9,54 @@ export const INCIDENT_CATEGORIES = [
   { value: "blocked_drainage", label: "Blocked drainage" },
   { value: "fallen_tree", label: "Fallen tree" },
   { value: "road_disruption", label: "Road disruption" },
+  { value: "power_cut", label: "Power cut" },
+  { value: "stagnant_water", label: "Stagnant water" },
+  { value: "transport_disruption", label: "Transport disruption" },
   { value: "environmental_hazard", label: "Environmental hazard" },
   { value: "other", label: "Other environmental incident" },
 ] as const;
+
+/** Report types offered in the fast flow and on the live map. */
+export const LIVE_REPORT_TYPES = [
+  { value: "waterlogging", label: "Waterlogging", color: "#2563eb" },
+  { value: "power_cut", label: "Power cut", color: "#ca8a04" },
+  { value: "fallen_tree", label: "Fallen tree", color: "#15803d" },
+  { value: "road_disruption", label: "Blocked road", color: "#dc2626" },
+  { value: "stagnant_water", label: "Stagnant water", color: "#7c3aed" },
+  { value: "transport_disruption", label: "Transport disruption", color: "#c2410c" },
+] as const;
+
+export const WATER_DEPTHS = [
+  { value: "ankle", label: "Ankle" },
+  { value: "knee", label: "Knee" },
+  { value: "waist", label: "Waist" },
+  { value: "above_waist", label: "Above waist" },
+] as const;
+
+export const PASSABILITY_OPTIONS = [
+  { value: "car", label: "Cars pass" },
+  { value: "two_wheeler", label: "Two-wheelers pass" },
+  { value: "walk", label: "Walking only" },
+  { value: "none", label: "Not passable" },
+] as const;
+
+export const TRUST_META: Record<ReportTrust, { label: string; classes: string; ring: string }> = {
+  unconfirmed: {
+    label: "Unconfirmed",
+    classes: "border-amber-200 bg-amber-50 text-amber-800",
+    ring: "#ffffff",
+  },
+  resident_confirmed: {
+    label: "Confirmed by residents",
+    classes: "border-sky-200 bg-sky-50 text-sky-800",
+    ring: "#0369a1",
+  },
+  moderator_verified: {
+    label: "Verified by moderator",
+    classes: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    ring: "#047857",
+  },
+};
 
 export const INCIDENT_STATUSES = [
   { value: "SUBMITTED", label: "Submitted" },
@@ -101,7 +116,7 @@ export const DATA_STATE_META: Record<
 
 export const MODULE_LABELS: Record<string, string> = {
   weather: "Weather forecast",
-  alerts: "Official IMD alerts",
+  alerts: "Official alerts (SACHET)",
   air_quality: "CPCB air-quality stations",
   environment: "Landsat satellite layers",
   climate: "ERA5-Land climate",

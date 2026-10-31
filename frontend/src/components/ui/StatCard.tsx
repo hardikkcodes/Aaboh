@@ -7,17 +7,17 @@ interface StatCardProps {
 
 const tones = {
   default: "border-ink-100 bg-white",
-  warm: "border-ember-200 bg-ember-50",
-  cool: "border-sky-100 bg-sky-50",
+  warm: "border-amber-200 bg-amber-50",
+  cool: "border-sky-200 bg-sky-50",
   alert: "border-red-200 bg-red-50",
 };
 
 export function StatCard({ label, value, detail, tone = "default" }: StatCardProps) {
   return (
-    <div className={`rounded-2xl border p-4 shadow-panel sm:p-5 ${tones[tone]}`}>
-      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-500">{label}</p>
-      <p className="mt-2 font-display text-2xl leading-none text-ink-950 sm:text-3xl">{value}</p>
-      {detail ? <p className="mt-2 text-xs leading-5 text-ink-500">{detail}</p> : null}
+    <div className={`rounded-xl border p-4 ${tones[tone]}`}>
+      <p className="text-xs font-medium text-ink-600">{label}</p>
+      <p className="mt-1 text-2xl font-semibold leading-tight text-ink-950">{value}</p>
+      {detail ? <p className="mt-1 text-xs leading-5 text-ink-600">{detail}</p> : null}
     </div>
   );
 }

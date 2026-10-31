@@ -6,8 +6,9 @@ explicit offsets; persistence converts them to UTC.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from datetime import date, datetime, time, timedelta
-from typing import Any, Iterator
+from typing import Any
 from zoneinfo import ZoneInfo
 
 

@@ -26,17 +26,15 @@ export function SourcePanel({
 }: SourcePanelProps) {
   const hasSource = Boolean(source?.name || source?.slug);
   return (
-    <section className={compact ? "panel-muted p-4" : "panel p-5 sm:p-6"} aria-label="Source and provenance">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-500">
-          Source &amp; provenance
-        </h2>
+    <details className={compact ? "panel-muted p-4" : "panel p-4"} aria-label="Source and provenance">
+      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 text-sm font-medium text-ink-700">
+        About this data{source?.name ? `: ${source.name}` : ""}
         {source?.is_official ? (
           <span className="chip border-emerald-200 bg-emerald-50 text-emerald-800">Official source</span>
         ) : hasSource ? (
           <span className="chip border-ink-200 bg-white text-ink-600">Provider data</span>
         ) : null}
-      </div>
+      </summary>
 
       {hasSource ? (
         <dl className="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
@@ -105,6 +103,6 @@ export function SourcePanel({
       ) : null}
       {note ? <p className="mt-3 text-xs leading-5 text-ink-500">{note}</p> : null}
       {extra ? <div className="mt-3">{extra}</div> : null}
-    </section>
+    </details>
   );
 }

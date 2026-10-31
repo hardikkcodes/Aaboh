@@ -19,6 +19,7 @@ from django.utils import timezone
 
 from apps.air_quality.models import AQIStation
 from apps.alerts.models import AlertStatus, OfficialAlert
+from apps.alerts.services import scope_matches
 from apps.core.geometry import bbox_around_point, haversine_m, parse_geometry
 from apps.core.models import DataSource
 from apps.core.quality import DataState, freshness_state, source_availability
@@ -183,13 +184,16 @@ def _nearby_reports(
     queryset = IncidentReport.objects.filter(
         area=area,
         occurred_at__gte=now - timedelta(hours=window_hours),
+        cleared_at__isnull=True,
         latitude__gte=min_lat,
         latitude__lte=max_lat,
         longitude__gte=min_lon,
         longitude__lte=max_lon,
     ).exclude(status__in=HIDDEN_STATUSES)
-    queryset = visible_incidents(queryset, user).select_related(
-        "area", "neighbourhood", "source"
+    queryset = (
+        visible_incidents(queryset, user)
+        .select_related("area", "neighbourhood", "source")
+        .prefetch_related("attachments", "confirmations")
     )
     reports = []
     for report in queryset.order_by("-occurred_at"):
@@ -592,11 +596,7 @@ def _air_quality_section(center: tuple[float, float], now) -> dict:
         "reason": None,
     }
     if nearest is None:
-        base["reason"] = (
-            "No CPCB monitoring stations have been ingested. CPCB_API_KEY is not configured."
-            if availability["state"] == DataState.UNAVAILABLE
-            else "No CPCB monitoring station is within 75 km of this place."
-        )
+        base["reason"] = "No CPCB monitoring stations have been ingested for this area. Run fetch_cpcb."
         return base
 
     measurement = (
@@ -621,6 +621,8 @@ def _air_quality_section(center: tuple[float, float], now) -> dict:
         return base
 
     state = freshness_state(measurement.measured_at, max_age=AIR_MAX_AGE)
+    if state == DataState.AVAILABLE and availability["state"] == DataState.UNAVAILABLE:
+        state = DataState.STALE
     base.update(
         {
             "state": state,
@@ -636,6 +638,9 @@ def _air_quality_section(center: tuple[float, float], now) -> dict:
                 "aqi_category": measurement.aqi_category,
                 "pm25": measurement.pm25,
                 "pm10": measurement.pm10,
+                "nh3": measurement.nh3,
+                "aqi_basis": (measurement.raw or {}).get("aqi_basis") or {},
+                "units": (measurement.raw or {}).get("units") or {},
                 "quality_status": measurement.quality_status,
             },
             "distance_km": round(nearest_distance, 2),
@@ -653,6 +658,8 @@ def _alert_scope(alert: OfficialAlert, area: Area, neighbourhood: Neighbourhood 
         return True
     if neighbourhood and neighbourhood.name.lower() in text:
         return True
+    if scope_matches(alert.areas_text):
+        return True
     if alert.geometry and area.boundary:
         try:
             return parse_geometry(alert.geometry).intersects(parse_geometry(area.boundary))
@@ -664,7 +671,7 @@ def _alert_scope(alert: OfficialAlert, area: Area, neighbourhood: Neighbourhood 
 def _alerts_section(
     area: Area, neighbourhood: Neighbourhood | None, now
 ) -> dict:
-    availability = _availability("imd")
+    availability = _availability("sachet")
     alerts = list(
         OfficialAlert.objects.filter(status=AlertStatus.ACTIVE)
         .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
@@ -672,20 +679,26 @@ def _alerts_section(
         .order_by("-issued_at")
     )
     scoped = [alert for alert in alerts if _alert_scope(alert, area, neighbourhood)]
-    if scoped:
-        state = (
-            DataState.AVAILABLE
-            if availability["state"] == DataState.AVAILABLE
-            else DataState.STALE
-        )
+    feed_healthy = availability["state"] in {DataState.AVAILABLE, DataState.PARTIAL}
+    if feed_healthy:
+        state = availability["state"]
         reason = None
-    else:
-        state = DataState.UNAVAILABLE
-        reason = (
-            "IMD_API_KEY is not configured; the official warning feed is unavailable."
-            if availability["state"] == DataState.UNAVAILABLE
-            else "No active official warning covers this area in the stored feed."
+        feed_message = (
+            f"{len(scoped)} active official warning(s) cover this area."
+            if scoped
+            else "The official alert feed is reachable. No active warning covers this area right now."
         )
+    elif scoped:
+        state = DataState.STALE
+        reason = (
+            "The latest official alert-feed refresh failed, so these warnings may be stale. "
+            "Check the issuing agency before acting."
+        )
+        feed_message = reason
+    else:
+        state = availability["state"]
+        reason = "The official alert feed is unavailable and no stored warning covers this area."
+        feed_message = reason
     return {
         "state": state,
         "count": len(scoped),
@@ -710,6 +723,7 @@ def _alerts_section(
         if availability.get("source")
         else {},
         "last_success_at": availability.get("last_success_at"),
+        "feed_message": feed_message,
         "note": (
             "Only source-issued warnings are shown. Absence of a warning is not proof that "
             "conditions are safe, and warnings can cover a whole district."
@@ -815,7 +829,12 @@ def _status_summary(
         level = "watch"
         reasons.append(f"{reports['verified']} verified community report(s) are nearby.")
 
-    if weather["state"] == DataState.UNAVAILABLE and reports["state"] == DataState.UNAVAILABLE:
+    # Only an otherwise quiet status becomes unknown: a warning must never be replaced.
+    if (
+        level == "typical"
+        and weather["state"] == DataState.UNAVAILABLE
+        and reports["state"] == DataState.UNAVAILABLE
+    ):
         level = "unknown"
         reasons = ["No live local inputs are currently available for this place."]
 
@@ -887,15 +906,58 @@ def build_place_status(
         waterlogging, heat, rain, air, alerts, reports_section, weather
     )
 
+    reports_updated_at = (
+        reports_section["results"][0]["occurred_at"] if reports_section.get("results") else None
+    )
     modules = [
-        {"key": "weather", "label": "Weather", "state": weather["state"]},
-        {"key": "waterlogging", "label": "Waterlogging signal", "state": waterlogging["state"]},
-        {"key": "alerts", "label": "Official alerts", "state": alerts["state"]},
-        {"key": "air_quality", "label": "Air quality", "state": air["state"]},
-        {"key": "heat", "label": "Heat", "state": heat["state"]},
-        {"key": "reports", "label": "Community reports", "state": reports_section["state"]},
+        {
+            "key": "weather",
+            "label": "Weather",
+            "state": weather["state"],
+            "updated_at": weather.get("retrieved_at"),
+        },
+        {
+            "key": "waterlogging",
+            "label": "Waterlogging signal",
+            "state": waterlogging["state"],
+            "updated_at": rain.get("retrieved_at"),
+        },
+        {
+            "key": "alerts",
+            "label": "Official alerts",
+            "state": alerts["state"],
+            "updated_at": alerts.get("last_success_at"),
+        },
+        {
+            "key": "air_quality",
+            "label": "Air quality",
+            "state": air["state"],
+            "updated_at": (air.get("measurement") or {}).get("measured_at"),
+        },
+        {
+            "key": "heat",
+            "label": "Heat",
+            "state": heat["state"],
+            "updated_at": heat["air"].get("retrieved_at"),
+        },
+        {
+            "key": "reports",
+            "label": "Community reports",
+            "state": reports_section["state"],
+            "updated_at": reports_updated_at,
+        },
     ]
     available = sum(1 for module in modules if module["state"] == DataState.AVAILABLE)
+    stale = sum(1 for module in modules if module["state"] == DataState.STALE)
+    partial = sum(1 for module in modules if module["state"] == DataState.PARTIAL)
+    unavailable = sum(1 for module in modules if module["state"] == DataState.UNAVAILABLE)
+    confidence = "high" if available >= 5 else "medium" if available >= 3 else "low"
+    status["confidence"] = confidence
+    status["confidence_note"] = (
+        f"{available} of {len(modules)} modules have a recent record; "
+        f"{stale} stale, {partial} partial, {unavailable} unavailable. "
+        "The headline is only as reliable as this coverage."
+    )
 
     return {
         "generated_at": now,
@@ -936,7 +998,11 @@ def build_place_status(
         "reports": reports_section,
         "coverage": {
             "available": available,
+            "stale": stale,
+            "partial": partial,
+            "unavailable": unavailable,
             "total": len(modules),
+            "confidence": confidence,
             "modules": modules,
         },
         "disclaimer": (

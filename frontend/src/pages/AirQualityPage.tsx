@@ -63,7 +63,7 @@ export function AirQualityPage() {
     }));
 
   return (
-    <div className="shell space-y-10 py-10 sm:py-14">
+    <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
         eyebrow="Air quality · CPCB stations"
         title="Station observations, not a city-wide surface"

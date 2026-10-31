@@ -12,6 +12,7 @@ import {
 
 import { useClimateTrends } from "../api/queries";
 import type { ClimatePoint } from "../api/types";
+import { ClimateStory } from "../components/live/ClimateStory";
 import { DataStateNotice, StateBadge } from "../components/ui/DataState";
 import { ErrorState, LoadingPanel } from "../components/ui/Feedback";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -72,13 +73,15 @@ export function ClimatePage() {
   const rainTrend = data?.trends.annual_precipitation;
 
   return (
-    <div className="shell space-y-10 py-10 sm:py-14">
+    <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
         eyebrow="Climate · ERA5-Land reanalysis"
         title="Long-term context for a hotter, wetter city"
         description="Annual and seasonal metrics from ERA5-Land reanalysis (~9 km). These are area-level values for context, not neighbourhood observations, forecasts or causal attribution."
         aside={data ? <StateBadge state={data.state} /> : null}
       />
+
+      {data ? <ClimateStory climate={data} /> : null}
 
       {climate.isError ? (
         <ErrorState error={climate.error} onRetry={() => void climate.refetch()} />

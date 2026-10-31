@@ -6,9 +6,9 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-civic_climate}
       POSTGRES_USER: ${POSTGRES_USER:-civic}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/10-postgis.sql:ro
@@ -28,6 +28,7 @@ services:
       DB_ENGINE: postgres
       POSTGRES_HOST: db
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend
+      DJANGO_NUM_PROXIES: "1"
     command: >
       sh -c "python manage.py migrate &&
              python manage.py bootstrap_kolkata &&
@@ -38,7 +39,7 @@ services:
       - ./ml:/app/ml
       - media_data:/app/backend/media
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -49,10 +50,10 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: /api/v1
-    environment:
-      VITE_API_BASE_URL: /api/v1
     ports:
-      - "5173:80"
+      - "127.0.0.1:5173:80"
+    volumes:
+      - media_data:/usr/share/nginx/media:ro
     depends_on:
       - backend
 

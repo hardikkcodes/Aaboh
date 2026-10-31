@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { api, TOKEN_KEY } from "../api/client";
+import { api, normalizeError, TOKEN_KEY } from "../api/client";
 import type { AuthResponse, User } from "../api/types";
 import { AuthContext, type AuthContextValue } from "./context";
 
@@ -63,8 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(response.data);
         setToken(storedToken);
       })
-      .catch(() => {
-        if (cancelled) return;
+      .catch((error: unknown) => {
+        // Only a rejected token ends the session; an outage must not log people out.
+        if (cancelled || normalizeError(error).status !== 401) return;
         persist(null, null);
       })
       .finally(() => {

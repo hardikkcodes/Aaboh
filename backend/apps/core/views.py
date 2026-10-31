@@ -16,7 +16,7 @@ from .sources import provider_configuration
 
 PUBLIC_MODULES = {
     "weather": "open_meteo",
-    "alerts": "imd",
+    "alerts": "sachet",
     "air_quality": "cpcb",
     "environment": "landsat",
     "climate": "era5_land",
@@ -25,7 +25,7 @@ PUBLIC_MODULES = {
 
 MODULE_REASONS = {
     "weather": "No weather forecast has been ingested. Run fetch_weather.",
-    "alerts": "IMD_API_KEY is not configured, so the official warning feed is unavailable.",
+    "alerts": "No official alert feed has been ingested yet. Run fetch_alerts.",
     "air_quality": "CPCB_API_KEY is not configured, so station measurements are unavailable.",
     "environment": "No satellite observations have been ingested. Google Earth Engine credentials may be missing.",
     "climate": "No ERA5-Land climate metrics have been ingested. Run fetch_climate.",
@@ -160,7 +160,12 @@ class DataStatusView(DocumentedAPIView):
                 continue
             availability = source_availability(source)
             state = availability["state"]
-            reason = None if state in {"AVAILABLE", "PARTIAL", "PROCESSING"} else MODULE_REASONS.get(module)
+            if state in {"AVAILABLE", "PARTIAL", "PROCESSING"}:
+                reason = None
+            elif state == "STALE":
+                reason = "The latest refresh failed or is overdue, so this data may be out of date."
+            else:
+                reason = MODULE_REASONS.get(module)
             modules[module] = {
                 "state": state,
                 "source": {

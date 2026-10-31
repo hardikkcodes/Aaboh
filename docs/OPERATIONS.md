@@ -177,8 +177,9 @@ cd backend
 
 ### Scheduling
 
-There is no built-in scheduler. Use Windows Task Scheduler, cron, or a Compose
-sidecar. A practical minimum:
+`docker-compose.prod.yml` includes a `scheduler` service that runs
+`backend/scripts/ingest_loop.sh`. Local runs have no scheduler, so use Windows
+Task Scheduler or cron if you need fresh data there. A practical minimum:
 
 - weather current/forecast: every 3 hours (freshness threshold is 3 hours);
 - community expiry/moderation: daily review;
@@ -244,13 +245,31 @@ Topology:
 - `backend`: Django on `:8000`, waits for the database healthcheck, runs
   migrations and Kolkata bootstrap on start, mounts `media_data`.
 - `frontend`: multi-stage Node build served by Nginx on host `:5173`
-  (container `:80`), proxying `/api/`, `/media/`, and `/admin/` to
-  `backend:8000`.
+  (container `:80`), proxying `/api/`, `/admin/`, and `/static/` to
+  `backend:8000` and serving `/media/` from a read-only shared volume.
+
+### Production stack
+
+`docker-compose.yml` is for local use: it runs `runserver` and mounts the source.
+For public use, set these in `.env`:
+
+- `DJANGO_SECRET_KEY`: a random value of at least 50 characters
+- `POSTGRES_PASSWORD`: a strong password
+- `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `DJANGO_CSRF_TRUSTED_ORIGINS`:
+  your real domain
+- `DJANGO_NUM_PROXIES`: `2` behind nginx plus a hosting TLS proxy (the default),
+  or `1` if nginx is directly public
+
+```powershell
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+This runs Gunicorn as a non-root user, keeps Postgres off the host network, and
+starts the ingestion scheduler. TLS must be terminated in front of the frontend
+port. Django refuses to start with `DJANGO_DEBUG=false` and a weak secret.
 
 Notes and caveats:
 
-- The Compose backend command uses `runserver`. Replace it with a production
-  WSGI/ASGI server (for example Gunicorn/Uvicorn) before public use.
 - The frontend API base URL is baked at build time. Changing it requires a
   rebuild.
 - The bootstrap runs on every container start; it is idempotent but needs

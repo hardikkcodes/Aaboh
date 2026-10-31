@@ -1,0 +1,67 @@
+{
+  "dataset": {
+    "path": "kolkata_next_day.csv",
+    "sha256": "261d32d23b4928968a0f411d180ccc15ee0942d5738c3c8b9308479a85f5572d",
+    "rows": 1002,
+    "train_period": [
+      "2024-01-23",
+      "2025-12-23"
+    ],
+    "test_period": [
+      "2025-12-24",
+      "2026-10-20"
+    ]
+  },
+  "features": [
+    "forecast_tmax",
+    "forecast_tmin",
+    "forecast_rh",
+    "forecast_rain",
+    "forecast_peak_rain",
+    "forecast_cloud",
+    "forecast_wind",
+    "forecast_rain_prev_3d",
+    "day_sin",
+    "day_cos"
+  ],
+  "heat": {
+    "target": "next_day_max_temperature_c",
+    "metric": "mean_absolute_error_c",
+    "model": 0.946,
+    "baseline_raw_forecast": 1.087,
+    "baseline_fixed_offset": 1.078,
+    "mean_forecast_minus_target_c": -0.107,
+    "improvement_over_raw_pct": 13.0,
+    "improvement_pct": 12.2,
+    "promotable": true
+  },
+  "rain": {
+    "target": "next_day_rain_at_least_20_mm",
+    "metric": "brier_score_lower_is_better",
+    "model": 0.0622,
+    "baseline_calibrated_forecast": 0.0548,
+    "baseline_climatology": 0.0706,
+    "improvement_pct": -13.4,
+    "heavy_days_in_test": 23,
+    "model_recall_at_30pct": 0.174,
+    "model_precision_at_30pct": 0.4,
+    "raw_forecast_recall_at_20mm": 0.478,
+    "raw_forecast_precision_at_20mm": 0.478,
+    "promotable": false
+  },
+  "limitations": [
+    "Targets are ERA5 reanalysis (about 25 km), not gauges or stations.",
+    "ERA5 smooths local storms, so heavy-rain labels miss some real events.",
+    "One point for the whole city; this says nothing about individual streets.",
+    "This does not predict waterlogging."
+  ],
+  "libraries": {
+    "python": "3.14.7",
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "sklearn": "1.9.1",
+    "xgboost": "3.4.1",
+    "joblib": "1.6.0"
+  },
+  "git_commit": "d763b297026279d9adce0358a51e51c27bfb19bb"
+}

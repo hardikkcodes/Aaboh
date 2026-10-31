@@ -18,6 +18,13 @@ COPY ml /app/ml
 
 WORKDIR /app/backend
 
+RUN DJANGO_DEBUG=true python manage.py collectstatic --noinput \
+    && useradd --system --uid 1000 --create-home app \
+    && mkdir -p media \
+    && chown -R app:app media
+
+USER app
+
 EXPOSE 8000
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "60"]

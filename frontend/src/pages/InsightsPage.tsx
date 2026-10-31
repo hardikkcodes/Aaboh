@@ -54,7 +54,7 @@ export function InsightsPage() {
   const generatorError = generate.isError ? normalizeError(generate.error) : null;
 
   return (
-    <div className="shell space-y-10 py-10 sm:py-14">
+    <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
         eyebrow="Decision support · rule engine"
         title="Today's evidence-backed briefing"
@@ -227,9 +227,20 @@ export function InsightsPage() {
                     return (
                       <div key={key} className="rounded-xl border border-ink-100 bg-ink-50 p-3">
                         <dt className="text-[0.65rem] uppercase tracking-wide text-ink-500">{meta.label}</dt>
-                        <dd className="mt-1 text-sm font-semibold text-ink-900">
-                          {formatNumber(value, meta.digits)} {meta.unit}
-                        </dd>
+                        {typeof value === "number" ? (
+                          <dd className="mt-1 text-sm font-semibold text-ink-900">
+                            {formatNumber(value, meta.digits)} {meta.unit}
+                          </dd>
+                        ) : (
+                          <dd className="mt-1 space-y-0.5">
+                            {Object.entries(value).map(([band, threshold]) => (
+                              <span key={band} className="block text-xs text-ink-700">
+                                <span className="font-semibold text-ink-900">{titleCase(band)}</span>{" "}
+                                at {formatNumber(threshold, meta.digits)} {meta.unit}
+                              </span>
+                            ))}
+                          </dd>
+                        )}
                       </div>
                     );
                   })}

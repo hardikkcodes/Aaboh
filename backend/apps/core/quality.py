@@ -10,6 +10,9 @@ from datetime import UTC, datetime, timedelta
 
 from django.utils import timezone as dj_timezone
 
+# A run still marked RUNNING after this long crashed without recording a result.
+ABANDONED_RUN_AFTER = timedelta(minutes=30)
+
 
 class DataState:
     AVAILABLE = "AVAILABLE"
@@ -68,32 +71,44 @@ def source_availability(source) -> dict:
     from .models import IngestionRunStatus
 
     latest = source.ingestion_runs.order_by("-started_at").first()
+    completed = (
+        source.ingestion_runs.exclude(status=IngestionRunStatus.RUNNING)
+        .order_by("-started_at")
+        .first()
+    )
     last_success = (
         source.ingestion_runs.filter(status=IngestionRunStatus.SUCCESS)
         .order_by("-finished_at")
         .first()
     )
 
-    state = DataState.UNAVAILABLE
     success_at = None
     if last_success:
         success_at = last_success.finished_at or last_success.started_at
-    if latest and latest.status == IngestionRunStatus.RUNNING:
-        state = DataState.PROCESSING
-    elif latest and latest.status == IngestionRunStatus.PARTIAL:
+
+    running = bool(latest and latest.status == IngestionRunStatus.RUNNING)
+    abandoned = running and latest.started_at < utcnow() - ABANDONED_RUN_AFTER
+    last_failed = abandoned or bool(completed and completed.status == IngestionRunStatus.FAILED)
+
+    if last_failed:
+        state = DataState.STALE if success_at else DataState.UNAVAILABLE
+    elif completed and completed.status == IngestionRunStatus.PARTIAL:
         state = DataState.PARTIAL
     elif success_at:
         state = freshness_state(
             success_at,
             max_age=max_age_for_source(source),
         )
-    elif latest and latest.status == IngestionRunStatus.FAILED:
+    elif running:
+        state = DataState.PROCESSING
+    else:
         state = DataState.UNAVAILABLE
 
+    # Raw provider errors stay on IngestionRun for operators. This dict reaches
+    # public responses, so it must never include them.
     return {
         "state": state,
         "last_success_at": success_at,
         "last_attempt_at": latest.started_at if latest else None,
         "last_attempt_status": latest.status if latest else None,
-        "last_error": (latest.error_message or None) if latest else None,
     }

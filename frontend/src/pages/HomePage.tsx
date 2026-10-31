@@ -1,173 +1,263 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
-import { useLocationSearch, usePlaceStatus } from "../api/queries";
+import { useToday } from "../api/queries";
+import type { SignalLevel, TodayResponse, TodayTip } from "../api/types";
 import { useTemperatureUnit } from "../auth/context";
-import { placePath } from "../lib/place";
+import { LiveCityMap } from "../components/live/LiveCityMap";
+import { NearMeButton } from "../components/place/NearMeButton";
 import { PlaceSearch } from "../components/place/PlaceSearch";
+import { SavedPlaces } from "../components/place/SavedPlaces";
 import { StateBadge } from "../components/ui/DataState";
 import { ErrorState, LoadingPanel } from "../components/ui/Feedback";
-import { SectionHeading } from "../components/ui/SectionHeading";
-import { StatCard } from "../components/ui/StatCard";
-import { formatNumber, formatRelative, formatTemperature, formatWithUnit, titleCase } from "../lib/format";
+import { ShareButton } from "../components/ui/ShareButton";
+import { cn, formatHour, formatTemperature, formatTime, formatWithUnit } from "../lib/format";
+import { useT } from "../lib/i18n";
 
-const STATUS_TONE = {
-  attention: "border-red-200 bg-red-50/70",
-  watch: "border-amber-200 bg-amber-50/70",
-  typical: "border-emerald-200 bg-emerald-50/60",
-  unknown: "border-ink-200 bg-ink-50/70",
+const PLACE_KEY = "climatesense.place";
+
+interface HomePlace {
+  area: string;
+  neighbourhood: string | null;
+  label: string;
+}
+
+const DEFAULT_PLACE: HomePlace = { area: "kolkata", neighbourhood: null, label: "Kolkata" };
+
+function storedPlace(): HomePlace {
+  try {
+    const raw = localStorage.getItem(PLACE_KEY);
+    return raw ? (JSON.parse(raw) as HomePlace) : DEFAULT_PLACE;
+  } catch {
+    return DEFAULT_PLACE;
+  }
+}
+
+const LEVEL_TONE: Record<SignalLevel, string> = {
+  warning: "border-red-200 bg-red-50 text-red-950",
+  caution: "border-amber-200 bg-amber-50 text-amber-950",
+  info: "border-sky-200 bg-sky-50 text-sky-950",
+  typical: "border-ink-100 bg-white text-ink-900",
+  unknown: "border-ink-100 bg-ink-50 text-ink-700",
+};
+
+const SEASON_SPOTLIGHT = {
+  air: { title: "Winter air watch", body: "Check the nearest station before a morning walk or run.", to: "/air-quality" },
+  heat: { title: "Heat and storm season", body: "Plan around midday heat and prepare for sudden nor'westers.", to: "/safety" },
+  monsoon: { title: "Monsoon mode", body: "Check your route before you leave, and report waterlogging you can see.", to: "/routes" },
+  festive: { title: "Festival days", body: "Find the driest, most comfortable hours this week.", to: "/plan" },
 } as const;
 
-export function HomePage() {
+const QUICK_ACTIONS = [
+  { to: "/report", label: "Report now", detail: "Takes seconds" },
+  { to: "/routes", label: "My routes", detail: "Check your commute" },
+  { to: "/plan", label: "Week planner", detail: "Best days and hours" },
+  { to: "/safety", label: "Safety", detail: "Numbers and checklists" },
+];
+
+function Tile({
+  label,
+  value,
+  detail,
+  to,
+  level = "typical",
+}: {
+  label: string;
+  value: string;
+  detail?: string;
+  to: string;
+  level?: SignalLevel;
+}) {
+  return (
+    <Link to={to} className={cn("block rounded-xl border p-4 transition hover:border-ink-300", LEVEL_TONE[level])}>
+      <p className="text-xs font-medium opacity-80">{label}</p>
+      <p className="mt-1 text-2xl font-semibold leading-tight">{value}</p>
+      {detail ? <p className="mt-1 text-xs leading-4 opacity-80">{detail}</p> : null}
+    </Link>
+  );
+}
+
+function TipRow({ tip }: { tip: TodayTip }) {
+  const { t } = useT();
+  return (
+    <li className={cn("rounded-xl border px-3 py-2.5 text-sm leading-5", LEVEL_TONE[tip.level])}>
+      {t(`tip.${tip.key}`, tip.params, tip.text)}
+    </li>
+  );
+}
+
+function shareText(today: TodayResponse, line: string): string {
+  const tips = today.tips.slice(0, 3).map((tip) => `• ${tip.text}`);
+  return [`Today in ${today.place.label}`, line, ...tips, "ClimateSense Kolkata"].join("\n");
+}
+
+function TodayBrief({ today }: { today: TodayResponse }) {
+  const { t } = useT();
   const unit = useTemperatureUnit();
-  const place = usePlaceStatus();
-  const localities = useLocationSearch("");
-  const data = place.data;
+  const { rain, heat, air, alerts, reports } = today;
+  const hasForecast = today.state !== "UNAVAILABLE";
+  const rainLine = !hasForecast
+    ? t("No forecast is available right now.")
+    : rain.next_rain_at
+      ? t("Rain likely around {time}", { time: formatTime(rain.next_rain_at) })
+      : t("No rain signal in the next 24 hours");
+  const windowLine = !hasForecast
+    ? null
+    : today.best_outdoor_window
+      ? t("Best time outdoors: {start} to {end}", {
+          start: formatTime(today.best_outdoor_window.start),
+          end: formatTime(today.best_outdoor_window.end),
+        })
+      : t("No clear dry, cooler window today");
 
   return (
-    <div className="shell space-y-8 py-8 sm:py-12">
-      <section className="panel overflow-hidden">
-        <div className="grid gap-6 p-6 sm:p-9 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-          <div>
-            <p className="eyebrow">Kolkata · area-first civic climate tool</p>
-            <h1 className="display-title mt-3 max-w-2xl">
-              Check your area before you head out.
-            </h1>
-            <p className="prose-civic mt-3 max-w-xl text-base">
-              Search a neighbourhood to see rain, waterlogging signals, heat, air quality, official
-              warnings and nearby community reports in one place.
-            </p>
-            <div className="mt-5 max-w-xl">
-              <PlaceSearch size="lg" />
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="text-xs text-ink-500">Try:</span>
-              {(localities.data?.results ?? []).slice(0, 6).map((locality) => (
-                <Link
-                  key={`${locality.type}-${locality.id}`}
-                  to={placePath(locality)}
-                  className="rounded-full border border-ink-200 bg-white px-2.5 py-1 text-xs font-medium text-ink-700 hover:border-ink-300"
-                >
-                  {locality.name}
-                </Link>
-              ))}
-              {localities.isLoading ? <span className="text-xs text-ink-400">Loading localities…</span> : null}
-            </div>
-          </div>
-          <div className="rounded-2xl border border-ink-100 bg-ink-50/60 p-4">
-            <p className="eyebrow">What you get</p>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-ink-700">
-              <li>· One status for your area, not nine separate dashboards.</li>
-              <li>· Clear labels for observed, forecast, rule-based and community data.</li>
-              <li>· Honest unavailable states instead of made-up numbers.</li>
-            </ul>
-            <Link to="/methodology" className="mt-3 inline-block text-xs font-medium text-ink-700 underline">
-              Read the data and method notes
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <SectionHeading
-          eyebrow="Kolkata overview"
-          title="The city right now"
-          description="A compact snapshot from the same area-status service. Open the full page for inputs, caveats and nearby reports."
-          action={
-            <Link to="/place/kolkata" className="btn-secondary !px-3 !py-1.5 text-xs">
-              Open Kolkata status
-            </Link>
-          }
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Tile
+          label={t("Rain, next 2 hours")}
+          value={rain.total_mm === null ? t("Not available") : formatWithUnit(rain.total_mm, "mm")}
+          detail={rainLine}
+          to="/rainfall"
         />
+        <Tile
+          label={t("Feels like, today's peak")}
+          value={heat.peak_heat_index_c === null ? t("Not available") : formatTemperature(heat.peak_heat_index_c, unit)}
+          to="/weather"
+          level={heat.level === "unknown" ? "typical" : heat.level}
+        />
+        <Tile
+          label={t("Nearest station AQI")}
+          value={air.aqi === null ? t("Not available") : String(air.aqi)}
+          to="/air-quality"
+          level={air.level === "unknown" ? "typical" : air.level}
+        />
+        <Tile
+          label={t("Official warnings")}
+          value={String(alerts.count)}
+          detail={`${t("Reports nearby")}: ${reports.nearby}`}
+          to="/alerts"
+          level={alerts.count ? "warning" : "typical"}
+        />
+      </div>
 
-        {place.isError ? (
-          <ErrorState className="mt-4" error={place.error} onRetry={() => void place.refetch()} />
-        ) : place.isLoading || !data ? (
-          <LoadingPanel label="Loading Kolkata status" rows={4} />
+      {today.timeline.length ? (
+        <section aria-label={t("Next 12 hours")}>
+          <h2 className="mb-2 text-sm font-semibold text-ink-800">{t("Next 12 hours")}</h2>
+          <ol className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+            {today.timeline.map((hour) => (
+              <li key={hour.time} className="w-[4.6rem] shrink-0 rounded-xl border border-ink-100 bg-white p-2 text-center">
+                <p className="text-[0.68rem] text-ink-500">{formatHour(hour.time)}</p>
+                <p className="mt-1 text-sm font-semibold text-ink-950">{formatTemperature(hour.heat_index_c, unit, 0)}</p>
+                <p className={cn("mt-0.5 text-[0.68rem]", (hour.rain_probability_pct ?? 0) >= 50 ? "font-semibold text-sky-800" : "text-ink-500")}>
+                  {hour.rain_probability_pct === null ? "—" : `${hour.rain_probability_pct}%`}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+
+      <div className="space-y-1 text-sm font-medium text-ink-800">
+        {windowLine ? <p>{windowLine}</p> : null}
+        {today.cleanest_air_window ? (
+          <p>
+            {t("Cleanest air: {start} to {end}", {
+              start: formatTime(today.cleanest_air_window.start),
+              end: formatTime(today.cleanest_air_window.end),
+            })}
+          </p>
+        ) : null}
+      </div>
+
+      <section aria-label={t("What to do today")}>
+        {today.tips.length ? (
+          <ul className="space-y-2">
+            {today.tips.map((tip) => <TipRow key={tip.key} tip={tip} />)}
+          </ul>
         ) : (
-          <div className="mt-4 space-y-4">
-            <div className={`rounded-2xl border p-5 ${STATUS_TONE[data.status.level]}`}>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h3 className="font-display text-xl text-ink-950">{data.status.headline}</h3>
-                  <ul className="mt-2 space-y-1 text-sm leading-6 text-ink-700">
-                    {data.status.reasons.slice(0, 3).map((reason) => (
-                      <li key={reason}>· {reason}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="flex flex-col items-start gap-1 sm:items-end">
-                  <StateBadge state={data.status.state} />
-                  <p className="text-xs text-ink-500">Updated {formatRelative(data.generated_at)}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard
-                label="Waterlogging signal"
-                value={data.waterlogging.label}
-                detail={`${data.waterlogging.points}/${data.waterlogging.max_points} points · rule-based, not ML`}
-                tone={data.waterlogging.level === "high" ? "alert" : data.waterlogging.level === "elevated" ? "warm" : "default"}
-              />
-              <StatCard
-                label="Rain next 24 h"
-                value={formatWithUnit(data.rain.next_24h_total_mm, "mm")}
-                detail={
-                  data.rain.next_24h_max_probability_pct === null
-                    ? data.rain.reason ?? "Forecast unavailable"
-                    : `${formatNumber(data.rain.next_24h_max_probability_pct)}% peak chance`
-                }
-              />
-              <StatCard
-                label="Heat stress"
-                value={formatTemperature(data.heat.air.value_c, unit)}
-                detail={data.heat.air.value_label ? titleCase(data.heat.air.value_label) : data.heat.air.reason ?? "Unavailable"}
-                tone={data.heat.air.level === "warning" ? "alert" : data.heat.air.level === "caution" ? "warm" : "default"}
-              />
-              <StatCard
-                label="Official alerts"
-                value={data.alerts.count ? `${data.alerts.count} active` : "None in feed"}
-                detail={data.alerts.count ? "Check the original bulletin" : data.alerts.reason ?? "No active warning"}
-              />
-            </div>
-
-            <p className="text-xs leading-5 text-ink-500">
-              {data.coverage.available} of {data.coverage.total} modules currently have a recent record. Air quality
-              and satellite heat remain unavailable until provider credentials and real exports exist.
-            </p>
-          </div>
+          <p className="rounded-xl border border-ink-100 bg-white px-3 py-2.5 text-sm text-ink-700">
+            {t("No strong signal right now. This is not a guarantee of safety.")}
+          </p>
         )}
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        <div className="panel p-5">
-          <p className="eyebrow">1 · Search</p>
-          <h2 className="mt-2 font-display text-lg text-ink-950">Start with your locality</h2>
-          <p className="mt-2 text-sm leading-6 text-ink-600">
-            Area status uses the Kolkata forecast point and reports within a 2.5 km neighbourhood radius or 5 km area
-            radius. It is not a street-level sensor.
-          </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <StateBadge state={today.state} />
+        {today.state === "STALE" ? <p className="text-xs text-amber-900">{t("The forecast may be out of date.")}</p> : null}
+        <ShareButton title={`Today in ${today.place.label}`} text={shareText(today, rainLine)} />
+      </div>
+    </div>
+  );
+}
+
+export function HomePage() {
+  const { t } = useT();
+  const [place, setPlace] = useState<HomePlace>(storedPlace);
+  const today = useToday(place.area, place.neighbourhood);
+  const season = today.data?.season ?? "air";
+  const spotlight = SEASON_SPOTLIGHT[season];
+
+  function choosePlace(next: HomePlace) {
+    setPlace(next);
+    try {
+      localStorage.setItem(PLACE_KEY, JSON.stringify(next));
+    } catch {
+      // The place simply lasts for this visit.
+    }
+  }
+
+  return (
+    <div className="shell space-y-6 py-5 sm:py-8">
+      <section>
+        <h1 className="display-title">{t("Today in {place}", { place: place.label })}</h1>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <NearMeButton
+            onPlace={(nearest) =>
+              choosePlace({
+                area: nearest.area_slug,
+                neighbourhood: nearest.type === "neighbourhood" ? nearest.slug : null,
+                label: nearest.name,
+              })
+            }
+          />
+          <div className="min-w-56 flex-1 sm:max-w-sm lg:hidden">
+            <PlaceSearch />
+          </div>
         </div>
-        <div className="panel p-5">
-          <p className="eyebrow">2 · Check the signal</p>
-          <h2 className="mt-2 font-display text-lg text-ink-950">Separate facts from signals</h2>
-          <p className="mt-2 text-sm leading-6 text-ink-600">
-            Observations, forecasts, rule-based indicators and resident reports are labelled separately. A low
-            waterlogging signal is not a guarantee that a street is dry.
-          </p>
-        </div>
-        <div className="panel p-5">
-          <p className="eyebrow">3 · Add local evidence</p>
-          <h2 className="mt-2 font-display text-lg text-ink-950">Report what you see</h2>
-          <p className="mt-2 text-sm leading-6 text-ink-600">
-            A photo and location help moderators verify waterlogging. Unverified reports are shown as unverified and
-            never presented as official warnings.
-          </p>
-          <Link to="/reports/new" className="btn-primary mt-3 !px-3 !py-1.5 text-xs">
-            Report an issue
-          </Link>
-        </div>
+        <SavedPlaces className="mt-3" />
       </section>
+
+      {today.isError ? (
+        <ErrorState error={today.error} onRetry={() => void today.refetch()} />
+      ) : today.data ? (
+        <TodayBrief today={today.data} />
+      ) : (
+        <LoadingPanel label="Loading today's brief" rows={3} />
+      )}
+
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {QUICK_ACTIONS.map((action) => (
+          <Link key={action.to} to={action.to} className="panel p-4 transition hover:border-ink-300">
+            <p className="text-sm font-semibold text-ink-900">{t(action.label)}</p>
+            <p className="mt-0.5 text-xs text-ink-500">{action.detail}</p>
+          </Link>
+        ))}
+      </section>
+
+      <Link to={spotlight.to} className="panel-muted block p-4 transition hover:border-ink-300">
+        <p className="text-sm font-semibold text-ink-950">{spotlight.title}</p>
+        <p className="mt-0.5 text-sm text-ink-600">{spotlight.body}</p>
+      </Link>
+
+      <section>
+        <h2 className="section-title mb-3">{t("What residents are reporting now")}</h2>
+        <LiveCityMap height="360px" />
+      </section>
+
+      <p className="text-xs leading-5 text-ink-500">
+        {today.data?.note} {t("For immediate danger, call 112.")}{" "}
+        <Link to="/methodology" className="underline">How this works</Link>
+      </p>
     </div>
   );
 }

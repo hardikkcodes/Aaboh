@@ -64,7 +64,7 @@ def test_place_status_is_honest_when_everything_is_unavailable(api_client, area)
     assert payload["waterlogging"]["level"] == "unknown"
     assert payload["waterlogging"]["method"]["is_ml"] is False
     assert any("not a trained" in caveat for caveat in payload["waterlogging"]["caveats"])
-    assert "IMD" in payload["alerts"]["reason"]
+    assert "alert feed is unavailable" in payload["alerts"]["reason"]
     assert "CPCB" in payload["air_quality"]["reason"]
     assert payload["reports"]["total"] == 0
     assert payload["coverage"]["available"] == 0

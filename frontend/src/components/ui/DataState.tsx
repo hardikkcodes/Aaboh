@@ -36,17 +36,16 @@ export function DataStateNotice({ state, title, reason, children, className }: D
           : "This layer is unavailable");
 
   return (
-    <div className={cn("rounded-2xl border p-4 sm:p-5", meta.classes, className)} role="status">
-      <div className="flex items-start gap-3">
+    <div className={cn("rounded-xl border p-3", meta.classes, className)} role="status">
+      <div className="flex items-start gap-2.5">
         <span
-          className={cn("mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full", meta.dot)}
+          className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", meta.dot)}
           aria-hidden="true"
         />
         <div className="min-w-0">
           <p className="text-sm font-semibold">{heading}</p>
-          {reason ? <p className="mt-1 text-sm leading-6 opacity-90">{reason}</p> : null}
-          {children ? <div className="mt-3 text-sm leading-6">{children}</div> : null}
-          <p className="mt-2 text-xs opacity-75">{meta.description}</p>
+          {reason ? <p className="mt-0.5 text-sm leading-5 opacity-90">{reason}</p> : null}
+          {children ? <div className="mt-1.5 text-sm leading-5">{children}</div> : null}
         </div>
       </div>
     </div>

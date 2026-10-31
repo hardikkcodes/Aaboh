@@ -8,6 +8,9 @@ from .models import AQIMeasurement, AQIStation
 
 
 class AQIMeasurementSerializer(serializers.ModelSerializer):
+    aqi_basis = serializers.SerializerMethodField()
+    units = serializers.SerializerMethodField()
+
     class Meta:
         model = AQIMeasurement
         fields = [
@@ -16,15 +19,24 @@ class AQIMeasurementSerializer(serializers.ModelSerializer):
             "retrieved_at",
             "aqi",
             "aqi_category",
+            "aqi_basis",
             "pm25",
             "pm10",
             "no2",
             "so2",
             "co",
             "o3",
+            "nh3",
+            "units",
             "quality_status",
             "quality_flags",
         ]
+
+    def get_aqi_basis(self, obj) -> dict:
+        return (obj.raw or {}).get("aqi_basis") or {}
+
+    def get_units(self, obj) -> dict:
+        return (obj.raw or {}).get("units") or {}
 
 
 class AQIStationSerializer(serializers.ModelSerializer):

@@ -35,7 +35,7 @@ export function ReportsPage() {
   const results = incidents.data?.results ?? [];
 
   return (
-    <div className="shell space-y-10 py-10 sm:py-14">
+    <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
         eyebrow="Community · resident observations"
         title="What residents are reporting"

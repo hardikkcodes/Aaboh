@@ -10,6 +10,8 @@ import { placePath } from "../lib/place";
 vi.mock("../api/queries", () => ({
   usePlaceStatus: vi.fn(),
   useLocationSearch: vi.fn(() => ({ data: { count: 0, results: [] }, isFetching: false })),
+  useSavedLocations: vi.fn(() => ({ data: [] })),
+  useCreateSavedLocation: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
 }));
 
 import { usePlaceStatus } from "../api/queries";
@@ -20,6 +22,15 @@ const report: Incident = {
   category_label: "Waterlogging",
   description: "Knee-deep water across the road near the crossing.",
   occurred_at: "2026-10-31T08:00:00Z",
+  water_depth: "knee",
+  water_depth_label: "Knee deep",
+  passability: "walk",
+  passability_label: "Walking only",
+  expires_at: "2026-10-31T14:00:00Z",
+  cleared_at: null,
+  is_active: true,
+  trust: "moderator_verified",
+  confirmations: { still_there: 0, cleared: 0, wrong: 0 },
   status: "VERIFIED",
   status_label: "Verified",
   verification_state: "VERIFIED",
@@ -198,14 +209,17 @@ const payload: PlaceStatusResponse = {
   },
   coverage: {
     available: 3,
+    stale: 0,
+    partial: 1,
+    unavailable: 2,
     total: 6,
     modules: [
-      { key: "weather", label: "Weather", state: "AVAILABLE" },
-      { key: "waterlogging", label: "Waterlogging signal", state: "AVAILABLE" },
-      { key: "alerts", label: "Official alerts", state: "UNAVAILABLE" },
-      { key: "air_quality", label: "Air quality", state: "UNAVAILABLE" },
-      { key: "heat", label: "Heat", state: "PARTIAL" },
-      { key: "reports", label: "Community reports", state: "AVAILABLE" },
+      { key: "weather", label: "Weather", state: "AVAILABLE", updated_at: "2026-10-31T09:00:00Z" },
+      { key: "waterlogging", label: "Waterlogging signal", state: "AVAILABLE", updated_at: "2026-10-31T09:00:00Z" },
+      { key: "alerts", label: "Official alerts", state: "UNAVAILABLE", updated_at: null },
+      { key: "air_quality", label: "Air quality", state: "UNAVAILABLE", updated_at: null },
+      { key: "heat", label: "Heat", state: "PARTIAL", updated_at: "2026-10-31T09:00:00Z" },
+      { key: "reports", label: "Community reports", state: "AVAILABLE", updated_at: "2026-10-31T08:00:00Z" },
     ],
   },
   disclaimer: "Decision support assembled from stored records. Not an official warning service.",

@@ -244,6 +244,57 @@ street-scale flooding.
 
 ---
 
+## Milestone 9c — Live city map and fast reporting
+
+**Status: Done (not yet tested on real phones or with real users)**
+
+- `/live` and the home page show active waterlogging, power cut, fallen tree,
+  blocked road and stagnant water reports, refreshed every minute.
+- `/report` is a phone-first flow: location, type, depth and passability, with an
+  optional note and photo. Existing nearby reports are offered first.
+- Reports expire by type. "Still there" extends a report; two independent
+  "Cleared" votes, or one from the reporter or a moderator, end it.
+- "Confirmed by residents" is kept separate from "Verified by moderator".
+
+**Named gaps:** no map response caching, no automatic hiding of reports flagged
+"Looks wrong", and report timing has not been measured with real users.
+
+---
+
+## Milestone 9d — Daily climate companion
+
+**Status: Done in code (Bengali, GPS and installability need real-device review)**
+
+- `/` is a Today brief for a chosen place: rain in the next two hours, heat index,
+  air quality, warnings, nearby reports, best outdoor window and tips.
+- GPS watches for up to 12 seconds, keeps the best reading and shows its accuracy.
+- `/plan` rates the next seven days. `/routes` checks private drawn corridors.
+- `/notifications` and `send_alerts` give in-app alerts; Telegram is optional.
+- `/safety` has emergency numbers, checklists and active cyclone warnings.
+- Complaint drafts, climate summary, personal impact levels, sharing, phone tabs,
+  an English/Bengali switch for the core flows, and an installable PWA.
+
+**Named gaps:** web push; road-following route drawing; hourly AQI forecasts;
+tide-aware signals; cyclone track data; cool spots; verified trouble spots;
+scorecards and issue history (need a season of data); relief coordination.
+
+---
+
+## Milestone 9e — Real-data models and resident-built layers
+
+**Status: Done in code (no model changes what residents see)**
+
+- `ml/src/forecast` compares archived day-ahead forecasts with ERA5 on real days.
+  Results are saved in `ml/reports/next_day.json` and shown at `/models`.
+- The heat correction beat the raw forecast and a fixed offset on 302 unseen days,
+  but its target is reanalysis, so it needs checking against real thermometers. The
+  heavy-rain model lost to its baseline and is not used.
+- Waterlogging and land-surface models remain untrained: they have no real labels.
+- Added a modelled PM2.5 forecast, resident-added cool spots, recurring spots drawn
+  from real reports, and an anonymous CSV export. Nothing is pre-loaded.
+
+---
+
 ## Milestone 10 — Operations and production readiness
 
 **Status: Partial**

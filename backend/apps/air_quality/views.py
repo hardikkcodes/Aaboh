@@ -70,7 +70,7 @@ class AirQualityStationsView(DocumentedAPIView):
                     "a neighbourhood AQI surface."
                 ),
                 "reason": (
-                    "CPCB_API_KEY is not configured; station measurements are unavailable."
+                    "No CPCB station measurements have been ingested. Run fetch_cpcb."
                     if not has_measurement
                     else None
                 ),

@@ -47,7 +47,7 @@ def test_data_status_is_honest_about_missing_credentials(api_client):
     assert response.status_code == 200
     modules = response.json()["modules"]
     assert modules["alerts"]["state"] == DataState.UNAVAILABLE
-    assert "IMD_API_KEY" in modules["alerts"]["reason"]
+    assert "fetch_alerts" in modules["alerts"]["reason"]
     assert modules["air_quality"]["state"] == DataState.UNAVAILABLE
     assert modules["environment"]["state"] == DataState.UNAVAILABLE
     assert modules["community"]["state"] == DataState.UNAVAILABLE
@@ -70,7 +70,8 @@ def test_source_availability_marks_stale_and_failed_states():
     )
     availability = source_availability(source)
     assert availability["state"] == DataState.UNAVAILABLE
-    assert availability["last_error"] == "provider timed out"
+    assert availability["last_attempt_status"] == IngestionRunStatus.FAILED
+    assert "last_error" not in availability
 
     IngestionRun.objects.create(source=source, status=IngestionRunStatus.SUCCESS)
     assert source_availability(source)["state"] == DataState.AVAILABLE

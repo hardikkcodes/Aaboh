@@ -9,25 +9,37 @@ import type {
   AreaDetail,
   AuthResponse,
   ClimateTrendsResponse,
+  CommunitySpot,
+  ConfirmationKind,
   DataStatusResponse,
   EnvironmentLayersResponse,
   EnvironmentObservationsResponse,
   HeatHotspotsResponse,
   HeatPredictionsResponse,
+  ImpactResponse,
   Incident,
   IncidentSummary,
   InsightsResponse,
+  LiveMapResponse,
   ModelInfoResponse,
+  ModelStatus,
+  NearestPlaceResponse,
+  NotificationsResponse,
   Paginated,
   PlaceStatusResponse,
   RainfallForecastResponse,
   RainfallHistoryResponse,
+  ReportHistory,
+  RouteStatus,
   SavedLocation,
+  SavedRoute,
   SearchResult,
+  TodayResponse,
   User,
   WeatherCurrentResponse,
   WeatherForecastResponse,
   WeatherHistoryResponse,
+  WeekPlanResponse,
 } from "./types";
 
 const DEFAULT_AREA = "kolkata";
@@ -57,10 +69,13 @@ export const queryKeys = {
   incidents: (filters: Record<string, unknown>) => ["incidents", filters] as const,
   incident: (id: string) => ["incidents", "detail", id] as const,
   incidentSummary: (area: string) => ["incidents", "summary", area] as const,
+  liveMap: (area: string, category: string) => ["incidents", "live", area, category] as const,
   insights: (area: string) => ["insights", area] as const,
   placeStatus: (area: string, neighbourhood?: string | null) =>
     ["place-status", area, neighbourhood ?? null] as const,
   search: (term: string) => ["locations", "search", term] as const,
+  nearest: (latitude: number, longitude: number) =>
+    ["locations", "nearest", latitude, longitude] as const,
   me: ["users", "me"] as const,
   savedLocations: ["users", "saved-locations"] as const,
 };
@@ -251,6 +266,167 @@ export function useIncidentSummary(area = DEFAULT_AREA) {
   });
 }
 
+export function useToday(area = DEFAULT_AREA, neighbourhood?: string | null) {
+  return useQuery({
+    queryKey: ["today", area, neighbourhood ?? null],
+    queryFn: () =>
+      get<TodayResponse>("/today/", { area, ...(neighbourhood ? { neighbourhood } : {}) }),
+    staleTime: 60_000,
+    refetchInterval: 5 * 60_000,
+  });
+}
+
+export function useModelStatus() {
+  return useQuery({
+    queryKey: ["system", "models"],
+    queryFn: () => get<ModelStatus>("/system/models/"),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useReportHistory(area = DEFAULT_AREA) {
+  return useQuery({
+    queryKey: ["incidents", "stats", area],
+    queryFn: () => get<ReportHistory>("/incidents/stats/", { area }),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useSpots() {
+  return useQuery({
+    queryKey: ["spots"],
+    queryFn: () => get<CommunitySpot[]>("/spots/"),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useCreateSpot() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { kind: string; name: string; latitude: number; longitude: number }) => {
+      const response = await api.post<CommunitySpot>("/spots/", payload);
+      return response.data;
+    },
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["spots"] });
+    },
+  });
+}
+
+export function useDeleteSpot() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/spots/${id}/`);
+    },
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["spots"] });
+    },
+  });
+}
+
+export function useWeekPlan(area = DEFAULT_AREA) {
+  return useQuery({
+    queryKey: ["week-plan", area],
+    queryFn: () => get<WeekPlanResponse>("/planner/week/", { area }),
+    staleTime: 10 * 60_000,
+  });
+}
+
+export function useRoutes(enabled = true) {
+  return useQuery({
+    queryKey: ["users", "routes"],
+    queryFn: () => get<SavedRoute[]>("/users/me/routes/"),
+    enabled,
+  });
+}
+
+export function useRouteStatus(id: string) {
+  return useQuery({
+    queryKey: ["users", "routes", id, "status"],
+    queryFn: () => get<RouteStatus>(`/users/me/routes/${id}/status/`),
+    staleTime: 30_000,
+    refetchInterval: 2 * 60_000,
+  });
+}
+
+export function useCreateRoute() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { label: string; points: [number, number][] }) => {
+      const response = await api.post<SavedRoute>("/users/me/routes/", payload);
+      return response.data;
+    },
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["users", "routes"] });
+    },
+  });
+}
+
+export function useDeleteRoute() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/users/me/routes/${id}/`);
+    },
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["users", "routes"] });
+    },
+  });
+}
+
+export function useNotifications(enabled = true) {
+  return useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => get<NotificationsResponse>("/notifications/"),
+    enabled,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useMarkNotificationsRead() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      await api.post("/notifications/read/");
+    },
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+export function useImpact() {
+  return useQuery({
+    queryKey: ["users", "impact"],
+    queryFn: () => get<ImpactResponse>("/users/me/impact/"),
+  });
+}
+
+export function useLiveMap(category = "", area = DEFAULT_AREA) {
+  return useQuery({
+    queryKey: queryKeys.liveMap(area, category),
+    queryFn: () =>
+      get<LiveMapResponse>("/incidents/live/", { area, ...(category ? { category } : {}) }),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useConfirmIncident() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, kind }: { id: string; kind: ConfirmationKind }) => {
+      const response = await api.post<Incident>(`/incidents/${id}/confirm/`, { kind });
+      return response.data;
+    },
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["incidents"] });
+      void client.invalidateQueries({ queryKey: ["place-status"] });
+    },
+  });
+}
+
 export function useInsights(area = DEFAULT_AREA) {
   return useQuery({
     queryKey: queryKeys.insights(area),
@@ -274,6 +450,20 @@ export function useLocationSearch(term: string) {
   return useQuery({
     queryKey: queryKeys.search(term),
     queryFn: () => get<{ count: number; results: SearchResult[] }>("/locations/search/", { q: term }),
+    staleTime: 5 * 60_000,
+  });
+}
+
+/**
+ * Nearest published locality to a coordinate. Straight-line matching, not
+ * reverse geocoding, so the caller must never present the result as an address.
+ */
+export function useNearbyPlace(latitude: number | null, longitude: number | null) {
+  return useQuery({
+    queryKey: queryKeys.nearest(latitude ?? 0, longitude ?? 0),
+    queryFn: () =>
+      get<NearestPlaceResponse>("/locations/nearest/", { lat: latitude, lon: longitude }),
+    enabled: latitude !== null && longitude !== null,
     staleTime: 5 * 60_000,
   });
 }
@@ -349,7 +539,13 @@ export function useUpdateMe() {
 export function useUpdatePreferences() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { temperature_unit?: "C" | "F"; default_area?: string | null }) => {
+    mutationFn: async (payload: {
+      temperature_unit?: "C" | "F";
+      default_area?: string | null;
+      alerts_enabled?: boolean;
+      quiet_hours?: boolean;
+      telegram_chat_id?: string;
+    }) => {
       const response = await api.patch<User>("/users/me/preferences/", payload);
       return response.data;
     },

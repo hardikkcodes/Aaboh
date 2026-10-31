@@ -23,7 +23,6 @@ class ModelVersionSerializer(serializers.ModelSerializer):
             "training_period_start",
             "training_period_end",
             "metrics",
-            "artifact_path",
             "code_commit",
             "training_config",
             "trained_at",

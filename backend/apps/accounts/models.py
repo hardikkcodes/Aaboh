@@ -49,11 +49,35 @@ class UserPreference(models.Model):
     temperature_unit = models.CharField(
         max_length=1, choices=[("C", "Celsius"), ("F", "Fahrenheit")], default="C"
     )
+    alerts_enabled = models.BooleanField(default=True)
+    quiet_hours = models.BooleanField(
+        default=True, help_text="Hold non-official Telegram alerts from 22:00 to 06:00 IST."
+    )
+    telegram_chat_id = models.CharField(max_length=32, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return f"Preferences for {self.user}"
+
+
+class SavedRoute(models.Model):
+    """A private corridor drawn by a user as a short list of [latitude, longitude] points."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="saved_routes")
+    label = models.CharField(max_length=80)
+    points = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "label"], name="uniq_saved_route_label_per_user")
+        ]
+
+    def __str__(self) -> str:
+        return self.label
 
 
 class SavedLocation(models.Model):

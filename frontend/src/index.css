@@ -16,6 +16,13 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
+html[lang="bn"] body,
+html[lang="bn"] .font-display,
+html[lang="bn"] .display-title,
+html[lang="bn"] .section-title {
+  font-family: "Noto Sans Bengali", Inter, sans-serif;
+}
+
 ::selection {
   @apply bg-ember-200 text-ink-950;
 }
@@ -26,23 +33,28 @@ body {
   }
 
   .panel {
-    @apply rounded-2xl border border-ink-100 bg-white shadow-panel;
+    @apply rounded-xl border border-ink-100 bg-white;
   }
 
   .panel-muted {
-    @apply rounded-2xl border border-ink-100 bg-ink-50/60;
+    @apply rounded-xl border border-ink-100 bg-ink-50/60;
   }
 
   .eyebrow {
-    @apply text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-ink-500;
+    @apply text-xs font-semibold text-ink-500;
+  }
+
+  .font-display {
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
   .display-title {
-    @apply font-display text-3xl leading-tight text-ink-950 sm:text-4xl;
+    @apply font-display text-2xl leading-tight text-ink-950 sm:text-3xl;
   }
 
   .section-title {
-    @apply font-display text-2xl text-ink-950;
+    @apply font-display text-lg text-ink-950;
   }
 
   .prose-civic {

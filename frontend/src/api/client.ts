@@ -18,6 +18,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// The API rejects a dead token even on public pages, so drop it and retry signed out.
+api.interceptors.response.use(undefined, (error: AxiosError) => {
+  const config = error.config;
+  if (error.response?.status === 401 && config && localStorage.getItem(TOKEN_KEY)) {
+    localStorage.removeItem(TOKEN_KEY);
+    config.headers.delete("Authorization");
+    return api.request(config);
+  }
+  return Promise.reject(error);
+});
+
 export interface NormalizedError {
   code: string;
   message: string;

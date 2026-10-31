@@ -317,14 +317,24 @@ observation.
 | GET | `/api/v1/incidents/summary/` | Public | 7-day counts by status/category |
 | GET | `/api/v1/incidents/<uuid>/` | Public | Detail, including duplicate hints |
 | PATCH | `/api/v1/incidents/<uuid>/` | Owner/moderator | Edit while `SUBMITTED` or `UNDER_REVIEW` |
-| GET | `/api/v1/incidents/<uuid>/history/` | Public | Status history without moderator identity |
+| GET | `/api/v1/incidents/live/` | Public | Current reports as GeoJSON; filters: `area`, `category` |
+| POST | `/api/v1/incidents/<uuid>/confirm/` | Required | Vote `still_there`, `cleared` or `wrong` |
+| GET | `/api/v1/incidents/<uuid>/history/` | Public | Status history without moderator identity; notes only for moderators and the reporter |
 | POST | `/api/v1/incidents/<uuid>/moderate/` | Moderator | Change status |
 
 **List filters:** `mine=true` (authenticated), `category`, `status`, `area`,
 `neighbourhood`, `since_hours` (1–2160), `bbox=min_lon,min_lat,max_lon,max_lat`.
 
 **Categories:** `waterlogging`, `flooding`, `blocked_drainage`, `fallen_tree`,
-`road_disruption`, `environmental_hazard`, `other`.
+`road_disruption`, `power_cut`, `stagnant_water`, `environmental_hazard`, `other`.
+
+**Live reports:** each report has `expires_at`, set by category (for example 6
+hours for waterlogging and power cuts, 7 days for stagnant water). A `still_there`
+vote extends it, up to four lifetimes after `occurred_at`. A report leaves the map
+after two independent `cleared` votes, or one from the reporter or a moderator.
+Reporters can't confirm their own reports. `trust` is `unconfirmed`,
+`resident_confirmed` (two other residents) or `moderator_verified`; residents
+can't change `verification_state`. Live map coordinates are rounded to 4 decimals.
 
 **Create fields (JSON):**
 
@@ -341,10 +351,11 @@ observation.
 }
 ```
 
-`description` is 20–2000 characters after whitespace normalisation. `occurred_at`
-must be within the last 7 days and not in the future. The point must fall inside
-the selected area boundary. `address_text` is a coarse landmark only; do not
-enter house numbers or contact details.
+`description` is optional, except for `other`, and is 10–2000 characters when
+present. `water_depth` and `passability` are optional and apply only to
+`waterlogging` and `flooding`. `occurred_at` must be within the last 7 days and not
+in the future. The point must fall inside the selected area boundary. `address_text`
+is a coarse landmark only; house numbers and contact details are rejected.
 
 For images, send `multipart/form-data` with up to four `attachments` fields. The
 server validates the MIME type and size, re-encodes the image, and strips EXIF.

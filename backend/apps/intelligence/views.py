@@ -10,10 +10,12 @@ from apps.accounts.permissions import IsModerator
 from apps.core.schemas import DocumentedAPIView
 from apps.locations.models import Area, Neighbourhood
 
+from .model_status import build_model_status
 from .models import Recommendation, RecommendationEvidence
 from .place_status import build_place_status
 from .serializers import InsightGenerateRequestSerializer, RecommendationSerializer
 from .services import RULESET_VERSION, generate_insights, persist_insights
+from .today import build_today, build_week_plan
 
 
 def _area_from_request(request) -> Area:
@@ -41,6 +43,30 @@ def _place_from_request(request, area_slug: str | None = None):
                 {"neighbourhood": f"Unknown neighbourhood for {area.slug}: {neighbourhood_slug}"}
             )
     return area, neighbourhood
+
+
+class TodayView(DocumentedAPIView):
+    """Personal daily brief for an area or neighbourhood."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        area, neighbourhood = _place_from_request(request)
+        return Response(build_today(area, neighbourhood=neighbourhood))
+
+
+class ModelStatusView(DocumentedAPIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response(build_model_status())
+
+
+class WeekPlanView(DocumentedAPIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response(build_week_plan(_area_from_request(request)))
 
 
 class PlaceStatusView(DocumentedAPIView):

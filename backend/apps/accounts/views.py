@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.contrib.auth import logout as django_logout
+from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -9,8 +10,10 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 
 from apps.core.schemas import DocumentedAPIView
+from apps.incidents.models import ConfirmationKind, IncidentConfirmation, IncidentReport
 
-from .models import SavedLocation, UserPreference
+from .models import SavedLocation, SavedRoute, UserPreference
+from .routes import route_status
 from .serializers import (
     AuthTokenSerializer,
     LoginSerializer,
@@ -18,8 +21,11 @@ from .serializers import (
     ProfileUpdateSerializer,
     RegisterSerializer,
     SavedLocationSerializer,
+    SavedRouteSerializer,
     UserSerializer,
 )
+
+IMPACT_LEVELS = [(20, "local_guardian"), (5, "street_watcher"), (1, "reporter")]
 
 
 class AuthThrottleMixin:
@@ -125,7 +131,62 @@ class PreferenceView(DocumentedAPIView):
 
             area_slug = data["default_area"]
             preference.default_area = Area.objects.filter(slug=area_slug).first() if area_slug else None
-        if "temperature_unit" in data:
-            preference.temperature_unit = data["temperature_unit"]
+        for field in ("temperature_unit", "alerts_enabled", "quiet_hours", "telegram_chat_id"):
+            if field in data:
+                setattr(preference, field, data[field])
         preference.save()
         return Response(UserSerializer(request.user).data)
+
+
+class SavedRouteListCreateView(DocumentedAPIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: SavedRouteSerializer(many=True)})
+    def get(self, request):
+        routes = SavedRoute.objects.filter(user=request.user)
+        return Response(SavedRouteSerializer(routes, many=True).data)
+
+    @extend_schema(request=SavedRouteSerializer, responses={201: SavedRouteSerializer})
+    def post(self, request):
+        serializer = SavedRouteSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        route = serializer.save()
+        return Response(SavedRouteSerializer(route).data, status=status.HTTP_201_CREATED)
+
+
+class SavedRouteDetailView(DocumentedAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        get_object_or_404(SavedRoute, pk=pk, user=request.user).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SavedRouteStatusView(DocumentedAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        return Response(route_status(get_object_or_404(SavedRoute, pk=pk, user=request.user)))
+
+
+class ImpactView(DocumentedAPIView):
+    """A resident's own contribution summary. Never shown on public pages."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        reports = IncidentReport.objects.filter(reporter=request.user)
+        confirmed = reports.filter(
+            confirmations__kind=ConfirmationKind.STILL_THERE
+        ).exclude(confirmations__user=request.user)
+        score = reports.count() + IncidentConfirmation.objects.filter(user=request.user).count()
+        level = next((name for minimum, name in IMPACT_LEVELS if score >= minimum), "new_neighbour")
+        return Response(
+            {
+                "reports": reports.count(),
+                "reports_confirmed_by_others": confirmed.distinct().count(),
+                "confirmations_given": IncidentConfirmation.objects.filter(user=request.user).count(),
+                "score": score,
+                "level": level,
+            }
+        )

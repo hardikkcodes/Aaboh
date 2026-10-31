@@ -16,7 +16,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import requests
@@ -128,7 +128,7 @@ def normalize_warnings(payload: Any, *, retrieved_at: datetime | None = None) ->
     else:
         items = []
 
-    retrieved = retrieved_at or datetime.now(tz=timezone.utc)
+    retrieved = retrieved_at or datetime.now(tz=UTC)
     normalized = []
     for item in items:
         if not isinstance(item, dict):
@@ -168,16 +168,16 @@ def _parse_dt(value: Any) -> datetime | None:
     if not value:
         return None
     if isinstance(value, datetime):
-        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        return value if value.tzinfo else value.replace(tzinfo=UTC)
     text = str(value).strip()
     for fmt in ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%d-%m-%Y"):
         try:
             parsed = datetime.strptime(text, fmt)
-            return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+            return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
         except ValueError:
             continue
     try:
         parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
-        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
     except ValueError:
         return None

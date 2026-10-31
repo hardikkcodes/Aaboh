@@ -173,7 +173,8 @@ export function ReportFormPage({ mode }: { mode: "create" | "edit" }) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setClientError(null);
-    if (form.description.trim().length < MIN_DESCRIPTION) {
+    const description = form.description.trim();
+    if (description.length < MIN_DESCRIPTION && (mode === "create" || description)) {
       setClientError(`Describe what you observed in at least ${MIN_DESCRIPTION} characters.`);
       return;
     }
@@ -209,7 +210,7 @@ export function ReportFormPage({ mode }: { mode: "create" | "edit" }) {
   }
 
   return (
-    <div className="shell space-y-8 py-10 sm:py-14">
+    <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
         eyebrow={mode === "create" ? "Community · new report" : "Community · edit report"}
         title={mode === "create" ? "Describe what you observed" : "Update your report"}
@@ -444,8 +445,8 @@ export function ReportFormPage({ mode }: { mode: "create" | "edit" }) {
             <p className="eyebrow">What the public sees</p>
             <p className="prose-civic mt-2">
               The public sees the description, category, status, verification label, coarse location,
-              coordinates, attachments and the moderation history. It never sees your email address or
-              identity. Moderator identities are not exposed either.
+              coordinates, attachments and status changes. It never sees your email address or identity.
+              Moderator identities and notes are not public either.
             </p>
           </div>
 
