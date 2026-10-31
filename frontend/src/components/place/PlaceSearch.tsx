@@ -1,10 +1,13 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { useLocationSearch } from "../../api/queries";
-import type { SearchResult } from "../../api/types";
+import { api } from "../../api/client";
+import { useLocationSearch, usePlaceSuggestions, useSavedLocations } from "../../api/queries";
+import type { NearestPlaceResponse, PickedPlace, PlaceSuggestion, SearchResult } from "../../api/types";
+import { useAuth } from "../../auth/context";
 import { cn } from "../../lib/format";
 import { placePath } from "../../lib/place";
+import { newSession, resolveSuggestion } from "../../lib/placeSearch";
 
 export function PlaceSearch({ size = "sm", className }: { size?: "sm" | "lg"; className?: string }) {
   const [term, setTerm] = useState("");
@@ -14,6 +17,12 @@ export function PlaceSearch({ size = "sm", className }: { size?: "sm" | "lg"; cl
   const location = useLocation();
   const listId = useId();
   const { data, isFetching } = useLocationSearch(term);
+  const { isAuthenticated } = useAuth();
+  const saved = useSavedLocations(isAuthenticated).data ?? [];
+  const session = useRef(newSession());
+  const google = usePlaceSuggestions(term.trim(), session.current).data;
+  const typed = google?.provider === "google" ? google.results.slice(0, 5) : [];
+  const mine = term.trim().length >= 2 ? saved.filter((item) => item.label.toLowerCase().includes(term.trim().toLowerCase())) : [];
 
   useEffect(() => {
     setOpen(false);
@@ -30,6 +39,25 @@ export function PlaceSearch({ size = "sm", className }: { size?: "sm" | "lg"; cl
 
   const results = data?.results.slice(0, 7) ?? [];
   const showResults = open && term.trim().length >= 2;
+
+  async function openPoint(place: PickedPlace) {
+    setOpen(false);
+    setTerm("");
+    const response = await api.get<NearestPlaceResponse>("/locations/nearest/", {
+      params: { lat: place.latitude, lon: place.longitude },
+    });
+    if (response.data.place) {
+      navigate(placePath(response.data.place), {
+        state: { fromSavedPlace: place.label, distanceKm: response.data.place.distance_km },
+      });
+    }
+  }
+
+  async function chooseTyped(item: PlaceSuggestion) {
+    const place = await resolveSuggestion(item, session.current);
+    session.current = newSession();
+    await openPoint(place);
+  }
 
   function choose(result: SearchResult) {
     setOpen(false);
@@ -90,6 +118,28 @@ export function PlaceSearch({ size = "sm", className }: { size?: "sm" | "lg"; cl
             size === "lg" ? "text-sm" : "text-xs",
           )}
         >
+          {mine.length || typed.length ? (
+            <ul className="border-b border-ink-100 py-1">
+              {mine.map((item) => (
+                <li key={item.id}>
+                  <button type="button" className="w-full px-3 py-2 text-left hover:bg-ink-50" onClick={() => void openPoint(item)}>
+                    <span data-original-text className="block font-medium text-ink-900">{item.label}</span>
+                  </button>
+                </li>
+              ))}
+              {typed.map((item) => (
+                <li key={item.place_id}>
+                  <button type="button" className="w-full px-3 py-2 text-left hover:bg-ink-50" onClick={() => void chooseTyped(item)}>
+                    <span data-original-text>
+                      <span className="block font-medium text-ink-900">{item.title}</span>
+                      <span className="text-ink-500">{item.subtitle}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+              {typed.length ? <li className="px-3 py-1 text-right text-[0.65rem] text-ink-400">Powered by Google</li> : null}
+            </ul>
+          ) : null}
           {results.length ? (
             <ul className="max-h-72 overflow-auto py-1">
               {results.map((result) => (

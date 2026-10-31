@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { useAlerts } from "../api/queries";
 import { TopicIcon } from "../components/ui/Icon";
+import { CycloneWatch } from "../components/weather/CycloneWatch";
 import { PageHeader } from "../components/ui/PageHeader";
 import { cn, formatDateTime } from "../lib/format";
 import { useT } from "../lib/i18n";
@@ -89,6 +90,8 @@ export function SafetyPage() {
         title={t("Stay ready")}
         description="General safety guidance. Official instructions always come first."
       />
+
+      <CycloneWatch />
 
       {cyclones.length ? (
         <section className="rounded-2xl border border-red-200 bg-red-50 p-4">

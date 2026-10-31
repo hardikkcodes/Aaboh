@@ -206,6 +206,7 @@ REST_FRAMEWORK = {
         "anon": "120/min",
         "user": "600/min",
         "auth": "10/min",
+        "places": "60/min",
         "incident_create": "12/hour",
         "incident_confirm": "60/hour",
     },
@@ -283,6 +284,7 @@ SACHET_SCOPE_TERMS = env_list(
 )
 ALERT_STATE_TERMS = env_list("ALERT_STATE_TERMS", "west bengal,gangetic bengal")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
 GEE_PROJECT_ID = os.getenv("GEE_PROJECT_ID", "")
 GEE_SERVICE_ACCOUNT_EMAIL = os.getenv("GEE_SERVICE_ACCOUNT_EMAIL", "")
 GEE_SERVICE_ACCOUNT_KEY_FILE = os.getenv("GEE_SERVICE_ACCOUNT_KEY_FILE", "")

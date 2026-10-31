@@ -4,14 +4,19 @@ from django.db.models import Count, Q
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView, RetrieveAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 
 from apps.core.geometry import haversine_m
 from apps.core.schemas import DocumentedAPIView
 
+from . import google_maps
 from .models import Area, GridCell, Neighbourhood
 from .serializers import AreaDetailSerializer, AreaListSerializer, GridCellSerializer
+
+MIN_QUERY_LENGTH = 2
+MAX_QUERY_LENGTH = 120
 
 
 class AreaListView(ListAPIView):
@@ -204,3 +209,77 @@ class LocationSearchView(DocumentedAPIView):
                 )
 
         return Response({"query": query, "count": len(results), "results": results})
+
+
+class PlaceThrottleMixin:
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "places"
+
+
+def _local_places(query: str) -> list[dict]:
+    places = Neighbourhood.objects.filter(is_active=True, name__icontains=query).select_related("area")[:8]
+    return [
+        {
+            "place_id": str(place.id),
+            "title": place.name,
+            "subtitle": place.area.name,
+            "latitude": place.latitude,
+            "longitude": place.longitude,
+        }
+        for place in places
+    ]
+
+
+class PlaceAutocompleteView(PlaceThrottleMixin, DocumentedAPIView):
+    """Google suggestions when a key is set; otherwise, or on failure, local places."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        query = (request.query_params.get("q") or "").strip()[:MAX_QUERY_LENGTH]
+        if len(query) < MIN_QUERY_LENGTH:
+            return Response({"provider": "local", "results": []})
+        if google_maps.enabled():
+            try:
+                session = request.query_params.get("session", "")[:MAX_QUERY_LENGTH]
+                return Response({"provider": "google", "results": google_maps.autocomplete(query, session)})
+            except google_maps.MapsUnavailable:
+                pass
+        return Response({"provider": "local", "results": _local_places(query)})
+
+
+class PlaceDetailsView(PlaceThrottleMixin, DocumentedAPIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        place_id = request.query_params.get("place_id")
+        if not place_id or not google_maps.enabled():
+            raise ValidationError({"place_id": "Choose a place from the list."})
+        try:
+            return Response(google_maps.place_details(place_id, request.query_params.get("session", "")))
+        except google_maps.MapsUnavailable:
+            return _maps_unavailable()
+
+
+def _maps_unavailable() -> Response:
+    return Response(
+        {"error": {"code": "maps_unavailable", "message": "Place search is unavailable right now.", "details": None}},
+        status=status.HTTP_503_SERVICE_UNAVAILABLE,
+    )
+
+
+class RoutePlanView(PlaceThrottleMixin, DocumentedAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        origin, destination = request.data.get("origin"), request.data.get("destination")
+        for point in (origin, destination):
+            valid = isinstance(point, list) and len(point) == 2
+            if not valid or not all(isinstance(value, int | float) for value in point):
+                raise ValidationError({"origin": "Choose a start and an end."})
+        if not google_maps.enabled():
+            return _maps_unavailable()
+        try:
+            return Response(google_maps.plan_route(origin, destination))
+        except google_maps.MapsUnavailable:
+            return _maps_unavailable()

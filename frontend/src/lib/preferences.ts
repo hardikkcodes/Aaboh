@@ -4,6 +4,7 @@ export type ThemeChoice = "system" | "light" | "dark";
 
 const AREA_KEY = "climatesense.area";
 const THEME_KEY = "climatesense.theme";
+const EXTRA_CARE_KEY = "climatesense.extraCare";
 export const DEFAULT_AREA = "kolkata";
 
 function read(key: string): string | null {
@@ -28,6 +29,14 @@ export function currentArea(): string {
 
 export function saveArea(slug: string): void {
   write(AREA_KEY, slug);
+}
+
+export function extraCareOn(): boolean {
+  return read(EXTRA_CARE_KEY) === "on";
+}
+
+export function saveExtraCare(on: boolean): void {
+  write(EXTRA_CARE_KEY, on ? "on" : "off");
 }
 
 export function storedTheme(): ThemeChoice {

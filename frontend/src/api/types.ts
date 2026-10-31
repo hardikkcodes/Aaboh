@@ -78,6 +78,30 @@ export interface Neighbourhood {
   point?: GeoJSONGeometry;
 }
 
+export interface PlaceSuggestion {
+  place_id: string;
+  title: string;
+  subtitle: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface PlaceSuggestions {
+  provider: "google" | "local";
+  results: PlaceSuggestion[];
+}
+
+export interface PickedPlace {
+  label: string;
+  latitude: number;
+  longitude: number;
+}
+
+export interface RoutePlan {
+  points: [number, number][];
+  distance_m: number | null;
+}
+
 export interface SearchResult {
   type: "area" | "neighbourhood";
   id: string;
@@ -721,6 +745,24 @@ export interface CommunitySpot {
   created_at: string;
 }
 
+export interface CycloneResponse {
+  results: {
+    event_id: string;
+    name: string;
+    alert_level: string;
+    distance_km: number;
+    report_url: string;
+  }[];
+}
+
+export interface PlaceScorecard {
+  hotter_than_pct: number | null;
+  greener_than_pct: number | null;
+  ground_class: "high" | "medium" | "low";
+  relative_elevation_m: number;
+  note: string;
+}
+
 export interface ReportHistory {
   window_days: number;
   total: number;
@@ -824,6 +866,7 @@ export interface SavedRoute {
   id: string;
   label: string;
   points: [number, number][];
+  leave_at: string | null;
   created_at: string;
 }
 
@@ -1077,6 +1120,7 @@ export interface PlaceStatusResponse {
   rain: PlaceRain;
   recent_rain: PlaceRecentRain;
   waterlogging: PlaceWaterlogging;
+  scorecard: PlaceScorecard | null;
   heat: PlaceHeat;
   air_quality: PlaceAirQuality;
   alerts: PlaceAlerts;

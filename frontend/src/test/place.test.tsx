@@ -9,6 +9,8 @@ import { placePath } from "../lib/place";
 
 vi.mock("../api/queries", () => ({
   usePlaceStatus: vi.fn(),
+  usePlaceSuggestions: () => ({ data: undefined }),
+  useReportHistory: () => ({ data: undefined }),
   useLocationSearch: vi.fn(() => ({ data: { count: 0, results: [] }, isFetching: false })),
   useSavedLocations: vi.fn(() => ({ data: [] })),
   useCreateSavedLocation: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
@@ -117,6 +119,7 @@ const payload: PlaceStatusResponse = {
     observed_at: "2026-10-31T00:00:00Z",
     note: "Daily model/archive value, not a rain gauge.",
   },
+  scorecard: null,
   waterlogging: {
     state: "AVAILABLE",
     level: "elevated",

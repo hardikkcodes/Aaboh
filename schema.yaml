@@ -423,6 +423,25 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/cyclones/:
+    get:
+      operationId: v1_cyclones_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/environment/cells/{cell_code}/:
     get:
       operationId: v1_environment_cells_retrieve
@@ -1105,6 +1124,44 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/places/autocomplete/:
+    get:
+      operationId: v1_places_autocomplete_retrieve
+      description: Google suggestions when a key is set; otherwise, or on failure,
+        local places.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/places/details/:
+    get:
+      operationId: v1_places_details_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/planner/week/:
     get:
       operationId: v1_planner_week_retrieve
@@ -1154,6 +1211,24 @@ paths:
       - tokenAuth: []
       - cookieAuth: []
       - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/routes/plan/:
+    post:
+      operationId: v1_routes_plan_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
       responses:
         '200':
           content:
@@ -2701,6 +2776,11 @@ components:
           type: string
           maxLength: 80
         points: {}
+        leave_at:
+          type: string
+          format: time
+          nullable: true
+          description: Usual leaving time, IST.
         created_at:
           type: string
           format: date-time
@@ -2718,6 +2798,11 @@ components:
           minLength: 1
           maxLength: 80
         points: {}
+        leave_at:
+          type: string
+          format: time
+          nullable: true
+          description: Usual leaving time, IST.
       required:
       - label
       - points

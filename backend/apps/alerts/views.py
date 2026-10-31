@@ -14,6 +14,7 @@ from apps.core.schemas import DocumentedAPIView
 from apps.core.serializers import source_summary
 from apps.locations.models import Area
 
+from .cyclones import active_cyclones
 from .models import AlertStatus, OfficialAlert
 from .serializers import OfficialAlertSerializer
 from .services import AlertMatch, alert_match, official_alert_source
@@ -120,3 +121,26 @@ class AlertDetailView(DocumentedAPIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response({"alert": OfficialAlertSerializer(alert).data})
+
+
+class CycloneListView(DocumentedAPIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response(
+            {
+                "results": [
+                    {
+                        "event_id": storm.event_id,
+                        "name": storm.name,
+                        "alert_level": storm.alert_level,
+                        "latitude": storm.latitude,
+                        "longitude": storm.longitude,
+                        "distance_km": storm.distance_km,
+                        "report_url": storm.report_url,
+                        "retrieved_at": storm.retrieved_at,
+                    }
+                    for storm in active_cyclones()
+                ]
+            }
+        )

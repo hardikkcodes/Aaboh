@@ -14,6 +14,7 @@ const ClimatePage = lazy(() => import("./pages/ClimatePage").then((page) => ({ d
 const HeatPage = lazy(() => import("./pages/HeatPage").then((page) => ({ default: page.HeatPage })));
 const HomePage = lazy(() => import("./pages/HomePage").then((page) => ({ default: page.HomePage })));
 const InsightsPage = lazy(() => import("./pages/InsightsPage").then((page) => ({ default: page.InsightsPage })));
+const OpenDataPage = lazy(() => import("./pages/OpenDataPage").then((page) => ({ default: page.OpenDataPage })));
 const LearnPage = lazy(() => import("./pages/LearnPage").then((page) => ({ default: page.LearnPage })));
 const LiveMapPage = lazy(() => import("./pages/LiveMapPage").then((page) => ({ default: page.LiveMapPage })));
 const LoginPage = lazy(() => import("./pages/LoginPage").then((page) => ({ default: page.LoginPage })));
@@ -50,6 +51,7 @@ const router = createBrowserRouter([
       { path: "spots", element: <SpotsPage /> },
       { path: "models", element: <ModelsPage /> },
       { path: "learn", element: <LearnPage /> },
+      { path: "open-data", element: <OpenDataPage /> },
       { path: "notifications", element: <NotificationsPage /> },
       { path: "weather", element: <WeatherPage /> },
       { path: "alerts", element: <AlertsPage /> },

@@ -13,6 +13,8 @@ import { StateBadge } from "../components/ui/DataState";
 import { ErrorState, LoadingPanel } from "../components/ui/Feedback";
 import { ShareButton } from "../components/ui/ShareButton";
 import { TopicIcon } from "../components/ui/Icon";
+import { CycloneWatch } from "../components/weather/CycloneWatch";
+import { ExtraCare } from "../components/weather/ExtraCare";
 import { cn, formatHour, formatTemperature, formatTime, formatWithUnit } from "../lib/format";
 import { useT } from "../lib/i18n";
 import { usePreferences } from "../lib/preferences";
@@ -183,6 +185,8 @@ function TodayBrief({ today }: { today: TodayResponse }) {
         ) : null}
       </div>
 
+      <CycloneWatch />
+
       <section aria-label={t("What to do today")}>
         {today.tips.length ? (
           <ul className="space-y-2">
@@ -194,6 +198,8 @@ function TodayBrief({ today }: { today: TodayResponse }) {
           </p>
         )}
       </section>
+
+      <ExtraCare today={today} />
 
       <div className="flex flex-wrap items-center gap-3">
         <StateBadge state={today.state} />

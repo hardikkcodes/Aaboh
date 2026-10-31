@@ -14,7 +14,7 @@ from .models import SavedLocation, SavedRoute, UserPreference
 
 User = get_user_model()
 MIN_ROUTE_POINTS = 2
-MAX_ROUTE_POINTS = 12
+MAX_ROUTE_POINTS = 100
 MAX_SAVED_ROUTES = 5
 
 
@@ -200,7 +200,7 @@ class PreferenceUpdateSerializer(serializers.Serializer):
 class SavedRouteSerializer(serializers.ModelSerializer):
     class Meta:
         model = SavedRoute
-        fields = ["id", "label", "points", "created_at"]
+        fields = ["id", "label", "points", "leave_at", "created_at"]
         read_only_fields = ["id", "created_at"]
 
     def validate_label(self, value: str) -> str:

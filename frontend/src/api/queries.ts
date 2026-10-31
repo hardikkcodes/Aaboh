@@ -30,6 +30,8 @@ import type {
   PlaceStatusResponse,
   RainfallForecastResponse,
   RainfallHistoryResponse,
+  CycloneResponse,
+  PlaceSuggestions,
   ReportHistory,
   RouteStatus,
   SavedLocation,
@@ -293,11 +295,19 @@ export function useModelStatus() {
   });
 }
 
-export function useReportHistory(area = currentArea()) {
+export function useReportHistory(area = currentArea(), neighbourhood?: string) {
   return useQuery({
-    queryKey: ["incidents", "stats", area],
-    queryFn: () => get<ReportHistory>("/incidents/stats/", { area }),
-    staleTime: 5 * 60_000,
+    queryKey: ["incidents", "stats", area, neighbourhood],
+    queryFn: () => get<ReportHistory>("/incidents/stats/", neighbourhood ? { area, neighbourhood } : { area }),
+    staleTime: 10 * 60_000,
+  });
+}
+
+export function useCyclones() {
+  return useQuery({
+    queryKey: ["cyclones"],
+    queryFn: () => get<CycloneResponse>("/cyclones/"),
+    staleTime: 15 * 60_000,
   });
 }
 
@@ -362,7 +372,7 @@ export function useRouteStatus(id: string) {
 export function useCreateRoute() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { label: string; points: [number, number][] }) => {
+    mutationFn: async (payload: { label: string; points: [number, number][]; leave_at: string | null }) => {
       const response = await api.post<SavedRoute>("/users/me/routes/", payload);
       return response.data;
     },
@@ -452,6 +462,15 @@ export function usePlaceStatus(area = currentArea(), neighbourhood?: string | nu
         ...(neighbourhood ? { neighbourhood } : {}),
       }),
     staleTime: 60_000,
+  });
+}
+
+export function usePlaceSuggestions(term: string, session: string) {
+  return useQuery({
+    queryKey: ["places", "autocomplete", term],
+    queryFn: () => get<PlaceSuggestions>("/places/autocomplete/", { q: term, session }),
+    enabled: term.length >= 2,
+    staleTime: 5 * 60_000,
   });
 }
 

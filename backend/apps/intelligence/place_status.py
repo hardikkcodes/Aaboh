@@ -29,6 +29,7 @@ from apps.environment.terrain import nearest_terrain
 from apps.incidents.models import IncidentCategory, IncidentReport, IncidentStatus
 from apps.incidents.serializers import IncidentListSerializer
 from apps.incidents.services import visible_incidents
+from apps.intelligence.scorecard import place_scorecard
 from apps.locations.models import Area, Neighbourhood
 from apps.weather.models import WeatherRecord
 from apps.weather.selectors import (
@@ -1013,6 +1014,7 @@ def build_place_status(
         "rain": rain,
         "recent_rain": recent_rain,
         "waterlogging": waterlogging,
+        "scorecard": place_scorecard(area, *centre) if neighbourhood else None,
         "heat": heat,
         "air_quality": air,
         "alerts": alerts,

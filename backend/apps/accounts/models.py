@@ -69,6 +69,7 @@ class SavedRoute(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="saved_routes")
     label = models.CharField(max_length=80)
     points = models.JSONField()
+    leave_at = models.TimeField(null=True, blank=True, help_text="Usual leaving time, IST.")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -33,6 +33,22 @@ class AlertStatus(models.TextChoices):
     CANCELLED = "cancelled", "Cancelled"
 
 
+class TropicalCyclone(models.Model):
+    """A storm active in our basin, as published by GDACS. Not an official Indian warning."""
+
+    event_id = models.CharField(max_length=40, unique=True)
+    name = models.CharField(max_length=120)
+    alert_level = models.CharField(max_length=20, blank=True)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    distance_km = models.PositiveIntegerField()
+    report_url = models.URLField(blank=True)
+    retrieved_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class OfficialAlert(models.Model):
     """An official warning exactly as issued, with its original severity and scope."""
 

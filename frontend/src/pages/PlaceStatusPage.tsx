@@ -13,6 +13,7 @@ import { SavePlaceButton } from "../components/place/SavedPlaces";
 import { StateBadge } from "../components/ui/DataState";
 import { ErrorState, LoadingPanel } from "../components/ui/Feedback";
 import { SectionHeading } from "../components/ui/SectionHeading";
+import { PlaceHistory, Scorecard } from "../components/place/PlaceHistory";
 import { StatCard } from "../components/ui/StatCard";
 import {
   formatDateTime,
@@ -399,6 +400,9 @@ export function PlaceStatusPage() {
           <Link to="/methodology" className="font-medium text-ink-700 underline">How this is calculated</Link>
         </p>
       </section>
+
+      {data.scorecard ? <Scorecard card={data.scorecard} /> : null}
+      <PlaceHistory area={areaSlug} neighbourhood={neighbourhoodSlug} />
 
       <section className="grid gap-4 sm:grid-cols-3">
         {groundHeight !== undefined ? (

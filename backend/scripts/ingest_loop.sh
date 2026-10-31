@@ -5,6 +5,7 @@
 pass=0
 while true; do
   python manage.py fetch_alerts || echo "fetch_alerts failed"
+  python manage.py fetch_cyclones || echo "fetch_cyclones failed"
   if [ $((pass % 4)) -eq 0 ]; then
     python manage.py fetch_weather --all-areas || echo "fetch_weather failed"
     python manage.py fetch_cpcb || echo "fetch_cpcb failed"

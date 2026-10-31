@@ -12,6 +12,7 @@ class NotificationKind(models.TextChoices):
     PLACE_REPORT = "place_report", "Report near your place"
     HEAVY_RAIN = "heavy_rain", "Heavy rain soon"
     HEAT = "heat", "Heat"
+    ROUTE_RAIN = "route_rain", "Rain near your leaving time"
 
 
 class Notification(models.Model):

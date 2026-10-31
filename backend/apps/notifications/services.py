@@ -7,6 +7,7 @@ optional extra delivery channel that needs TELEGRAM_BOT_TOKEN.
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 from zoneinfo import ZoneInfo
 
 import requests
@@ -27,6 +28,8 @@ from apps.intelligence.place_status import _alert_scope
 from apps.intelligence.today import (
     HEAT_INDEX_DANGER_C,
     HEAVY_RAIN_SOON_MM,
+    RAIN_LIKELY_MM,
+    RAIN_LIKELY_PROBABILITY,
     heat_index_c,
     rain_soon,
 )
@@ -48,6 +51,8 @@ NOTIFY_CATEGORIES = {
 }
 QUIET_HOURS = {22, 23, 0, 1, 2, 3, 4, 5}
 TELEGRAM_TIMEOUT_SECONDS = 15
+NUDGE_LEAD = timedelta(hours=2)
+NUDGE_RAIN_WINDOW = timedelta(hours=1)
 
 
 def _notify(preference: UserPreference, *, kind: str, title: str, body: str, link: str, key: str) -> bool:
@@ -96,6 +101,22 @@ def deliver_telegram(notification: Notification, preference: UserPreference) -> 
     notification.delivered_at = timezone.now()
     notification.save(update_fields=["delivered_at"])
     return True
+
+
+def commute_nudge(leave_at, hours: list, now) -> str | None:
+    """The rain hour to warn about, once a saved leaving time is close."""
+    local = now.astimezone(IST)
+    leaving = local.replace(hour=leave_at.hour, minute=leave_at.minute, second=0, microsecond=0)
+    if not timedelta(0) <= leaving - local <= NUDGE_LEAD:
+        return None
+    for record in hours:
+        if abs(record.valid_time - leaving) > NUDGE_RAIN_WINDOW:
+            continue
+        if (record.precipitation_probability or 0) >= RAIN_LIKELY_PROBABILITY or (
+            record.precipitation_mm or 0
+        ) >= RAIN_LIKELY_MM:
+            return f"{record.valid_time.astimezone(IST):%H:%M}"
+    return None
 
 
 def _describe(report) -> str:
@@ -185,6 +206,20 @@ def evaluate_alerts(*, now=None) -> dict:
         for route in SavedRoute.objects.filter(user=user):
             latitude, longitude = route.points[0]
             route_area = area_for_point(latitude, longitude) or home
+            if route.leave_at:
+                hours = [item for item in hourly_records(route_area.slug, hours=6) if item.valid_time >= now]
+                rain_time = commute_nudge(route.leave_at, hours, now)
+                if rain_time:
+                    created += int(
+                        _notify(
+                            preference,
+                            kind=NotificationKind.ROUTE_RAIN,
+                            title=f"Rain likely near your {route.label} trip",
+                            body=f"Forecast around {rain_time}. You usually leave at {route.leave_at:%H:%M}, so consider leaving earlier.",
+                            link="/routes",
+                            key=f"route-rain:{route.id}:{now.astimezone(IST):%Y-%m-%d}",
+                        )
+                    )
             for report, distance in reports_on_route(route, route_area, now=now):
                 if report.reporter_id == user.id or report.category not in NOTIFY_CATEGORIES:
                     continue

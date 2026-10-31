@@ -1,8 +1,13 @@
+import { Navigation } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { CircleMarker, Polyline, useMapEvents } from "react-leaflet";
 import { Link } from "react-router-dom";
 
 import { fieldErrors, normalizeError } from "../api/client";
+import { api } from "../api/client";
+import type { PickedPlace, RoutePlan } from "../api/types";
+import { MyPlaces } from "../components/place/MyPlaces";
+import { PlacePicker } from "../components/place/PlacePicker";
 import { useCreateRoute, useDeleteRoute, useRoutes, useRouteStatus } from "../api/queries";
 import type { RouteStatus, SavedRoute } from "../api/types";
 import { useAuth } from "../auth/context";
@@ -93,9 +98,32 @@ function NewRoute() {
   const { t } = useT();
   const create = useCreateRoute();
   const [label, setLabel] = useState("");
+  const [leaveAt, setLeaveAt] = useState("");
+  const [from, setFrom] = useState<PickedPlace | null>(null);
+  const [to, setTo] = useState<PickedPlace | null>(null);
+  const [finding, setFinding] = useState(false);
   const [points, setPoints] = useState<[number, number][]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const apiError = create.isError ? normalizeError(create.error) : null;
+
+  async function findRoute() {
+    if (!from || !to) return;
+    setFinding(true);
+    setMessage(null);
+    if (!label.trim()) setLabel(`${from.label} to ${to.label}`.slice(0, 80));
+    try {
+      const response = await api.post<RoutePlan>("/routes/plan/", {
+        origin: [from.latitude, from.longitude],
+        destination: [to.latitude, to.longitude],
+      });
+      setPoints(response.data.points);
+    } catch {
+      setPoints([[from.latitude, from.longitude], [to.latitude, to.longitude]]);
+      setMessage("Road directions aren't available right now, so this is a straight line. Tap the map to add your turns.");
+    } finally {
+      setFinding(false);
+    }
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -105,8 +133,9 @@ function NewRoute() {
     }
     setMessage(null);
     try {
-      await create.mutateAsync({ label: label.trim(), points });
+      await create.mutateAsync({ label: label.trim(), points, leave_at: leaveAt || null });
       setLabel("");
+      setLeaveAt("");
       setPoints([]);
     } catch {
       // The mutation state renders the API error below.
@@ -130,6 +159,19 @@ function NewRoute() {
           placeholder="Home to college"
         />
       </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <PlacePicker label="From" placeholder="Home, or type a place" value={from} onPick={setFrom} />
+        <PlacePicker label="To" placeholder="College, or type a place" value={to} onPick={setTo} />
+      </div>
+      <button type="button" className="btn-secondary w-full" disabled={!from || !to || finding} onClick={() => void findRoute()}>
+        <Navigation className="mr-1.5 h-4 w-4" aria-hidden="true" />
+        {finding ? "Finding route…" : "Find route"}
+      </button>
+      <div>
+        <label className="label" htmlFor="route-leave">When do you usually leave? (optional)</label>
+        <input id="route-leave" type="time" className="field" value={leaveAt} onChange={(event) => setLeaveAt(event.target.value)} />
+        <p className="mt-1 text-xs text-ink-500">If rain is likely near that time, we'll tell you up to 2 hours before.</p>
+      </div>
       <CivicMap height="320px" zoom={12}>
         <DrawHandler onAdd={(point) => setPoints((current) => (current.length < MAX_POINTS ? [...current, point] : current))} />
         {points.length > 1 ? <Polyline positions={points} pathOptions={{ color: LINE_COLOR, weight: 4 }} /> : null}
@@ -143,7 +185,7 @@ function NewRoute() {
         ))}
       </CivicMap>
       <div className="flex items-center justify-between text-xs text-ink-600">
-        <span>{points.length} of {MAX_POINTS} points</span>
+        <span>{points.length > MAX_POINTS ? "Route found" : `${points.length} of ${MAX_POINTS} points`}</span>
         <button type="button" className="underline" onClick={() => setPoints((current) => current.slice(0, -1))} disabled={!points.length}>
           Undo last point
         </button>
@@ -196,7 +238,8 @@ export function RoutesPage() {
             <p className="panel p-4 text-sm text-ink-700">No routes yet. Add your first one, such as home to college.</p>
           )}
         </div>
-        <NewRoute />
+        <MyPlaces />
+      <NewRoute />
       </div>
     </div>
   );
