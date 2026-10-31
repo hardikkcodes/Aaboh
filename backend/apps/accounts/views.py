@@ -1,16 +1,20 @@
 from __future__ import annotations
 
 from django.contrib.auth import logout as django_logout
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
-from rest_framework.views import APIView
+
+from apps.core.schemas import DocumentedAPIView
 
 from .models import SavedLocation, UserPreference
 from .serializers import (
+    AuthTokenSerializer,
     LoginSerializer,
+    PreferenceUpdateSerializer,
     ProfileUpdateSerializer,
     RegisterSerializer,
     SavedLocationSerializer,
@@ -23,10 +27,11 @@ class AuthThrottleMixin:
     throttle_scope = "auth"
 
 
-class RegisterView(AuthThrottleMixin, APIView):
+class RegisterView(AuthThrottleMixin, DocumentedAPIView):
     authentication_classes: list = []
     permission_classes = [AllowAny]
 
+    @extend_schema(request=RegisterSerializer, responses={201: AuthTokenSerializer})
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -38,10 +43,11 @@ class RegisterView(AuthThrottleMixin, APIView):
         )
 
 
-class LoginView(AuthThrottleMixin, APIView):
+class LoginView(AuthThrottleMixin, DocumentedAPIView):
     authentication_classes: list = []
     permission_classes = [AllowAny]
 
+    @extend_schema(request=LoginSerializer, responses={200: AuthTokenSerializer})
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -50,9 +56,10 @@ class LoginView(AuthThrottleMixin, APIView):
         return Response({"token": token.key, "user": UserSerializer(user).data})
 
 
-class LogoutView(APIView):
+class LogoutView(DocumentedAPIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=None, responses={204: None})
     def post(self, request):
         if isinstance(request.auth, Token):
             request.auth.delete()
@@ -60,12 +67,14 @@ class LogoutView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class MeView(APIView):
+class MeView(DocumentedAPIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: UserSerializer})
     def get(self, request):
         return Response(UserSerializer(request.user).data)
 
+    @extend_schema(request=ProfileUpdateSerializer, responses={200: UserSerializer})
     def patch(self, request):
         serializer = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -73,13 +82,15 @@ class MeView(APIView):
         return Response(UserSerializer(request.user).data)
 
 
-class SavedLocationListCreateView(APIView):
+class SavedLocationListCreateView(DocumentedAPIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: SavedLocationSerializer(many=True)})
     def get(self, request):
         items = SavedLocation.objects.filter(user=request.user).select_related("area")
         return Response(SavedLocationSerializer(items, many=True).data)
 
+    @extend_schema(request=SavedLocationSerializer, responses={201: SavedLocationSerializer})
     def post(self, request):
         serializer = SavedLocationSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -87,7 +98,7 @@ class SavedLocationListCreateView(APIView):
         return Response(SavedLocationSerializer(location).data, status=status.HTTP_201_CREATED)
 
 
-class SavedLocationDetailView(APIView):
+class SavedLocationDetailView(DocumentedAPIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, pk):
@@ -100,18 +111,21 @@ class SavedLocationDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class PreferenceView(APIView):
+class PreferenceView(DocumentedAPIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=PreferenceUpdateSerializer, responses={200: UserSerializer})
     def patch(self, request):
+        serializer = PreferenceUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
         preference, _ = UserPreference.objects.get_or_create(user=request.user)
-        area_slug = request.data.get("default_area")
-        if area_slug is not None:
+        if "default_area" in data:
             from apps.locations.models import Area
 
+            area_slug = data["default_area"]
             preference.default_area = Area.objects.filter(slug=area_slug).first() if area_slug else None
-        unit = request.data.get("temperature_unit")
-        if unit in {"C", "F"}:
-            preference.temperature_unit = unit
+        if "temperature_unit" in data:
+            preference.temperature_unit = data["temperature_unit"]
         preference.save()
         return Response(UserSerializer(request.user).data)

@@ -15,8 +15,8 @@ from typing import Any
 from django.db.models import Q
 from django.utils import timezone
 
-from apps.alerts.models import AlertStatus, OfficialAlert
 from apps.air_quality.models import AQIStation
+from apps.alerts.models import AlertStatus, OfficialAlert
 from apps.core.geometry import haversine_m, parse_geometry
 from apps.core.models import DataSource
 from apps.core.quality import DataState, source_availability
@@ -608,7 +608,7 @@ def _climate_rule(ctx: RuleContext) -> dict | None:
         y_mean = mean(values)
         denominator = sum((year - x_mean) ** 2 for year in years)
         if denominator:
-            slope = sum((year - x_mean) * (value - y_mean) for year, value in zip(years, values)) / denominator
+            slope = sum((year - x_mean) * (value - y_mean) for year, value in zip(years, values, strict=True)) / denominator
     if (anomaly is None or abs(anomaly) < CLIMATE_ANOMALY_C["info"]) and (
         slope is None or abs(slope * 10) < 0.15
     ):

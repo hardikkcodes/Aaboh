@@ -101,9 +101,12 @@ class IncidentReport(models.Model):
         point = parse_geometry(self.point)
         if abs(point.y - self.latitude) > 1e-6 or abs(point.x - self.longitude) > 1e-6:
             raise ValidationError({"point": "Point coordinates and latitude/longitude disagree."})
-        if self.area_id and self.area.boundary:
-            if not parse_geometry(self.area.boundary).covers(point):
-                raise ValidationError({"point": "Report location is outside the selected area."})
+        if (
+            self.area_id
+            and self.area.boundary
+            and not parse_geometry(self.area.boundary).covers(point)
+        ):
+            raise ValidationError({"point": "Report location is outside the selected area."})
 
     def __str__(self) -> str:
         return f"{self.get_category_display()} at {self.latitude:.4f},{self.longitude:.4f}"

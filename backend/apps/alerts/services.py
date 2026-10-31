@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import logging
 
+from data_pipelines.providers.imd import IMDClient, IMDNotConfigured, IMDProviderError, normalize_warnings
 from django.conf import settings
 from django.utils import timezone
 
 from apps.core.models import DataSource, IngestionRun, IngestionRunStatus
-from data_pipelines.providers.imd import IMDClient, IMDNotConfigured, IMDProviderError, normalize_warnings
 
 from .models import OfficialAlert
 

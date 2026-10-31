@@ -8,9 +8,9 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from apps.core.quality import DataState
+from apps.core.schemas import DocumentedAPIView
 from apps.core.serializers import source_summary
 from apps.locations.models import Area
 from apps.weather.selectors import daily_records, history_records, hourly_records
@@ -31,7 +31,7 @@ def _source(records):
     return records[0].source if records else None
 
 
-class RainfallForecastView(APIView):
+class RainfallForecastView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -65,7 +65,7 @@ class RainfallForecastView(APIView):
         )
 
 
-class RainfallHistoryView(APIView):
+class RainfallHistoryView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):

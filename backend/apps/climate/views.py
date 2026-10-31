@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from apps.core.models import DataSource
 from apps.core.quality import source_availability
+from apps.core.schemas import DocumentedAPIView
 from apps.core.serializers import source_summary
 from apps.locations.models import Area
 
@@ -46,7 +45,7 @@ def _linear_trend(series: list[dict]) -> dict | None:
     }
 
 
-class ClimateMetricsView(APIView):
+class ClimateMetricsView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -86,7 +85,7 @@ class ClimateMetricsView(APIView):
         )
 
 
-class ClimateTrendsView(APIView):
+class ClimateTrendsView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):

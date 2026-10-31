@@ -7,6 +7,10 @@ from apps.core.serializers import source_summary
 from .models import Recommendation, RecommendationEvidence
 
 
+class InsightGenerateRequestSerializer(serializers.Serializer):
+    area = serializers.SlugField(required=False, allow_blank=False)
+
+
 class RecommendationEvidenceSerializer(serializers.ModelSerializer):
     source = serializers.SerializerMethodField()
 

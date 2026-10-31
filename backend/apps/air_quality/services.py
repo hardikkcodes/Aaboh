@@ -2,17 +2,17 @@ from __future__ import annotations
 
 import logging
 
-from django.conf import settings
-from django.utils import timezone
-
-from apps.core.models import DataSource, IngestionRun, IngestionRunStatus
-from apps.core.quality import DataState
 from data_pipelines.providers.cpcb import (
     CPCBClient,
     CPCBNotConfigured,
     CPCBProviderError,
     normalize_records,
 )
+from django.conf import settings
+from django.utils import timezone
+
+from apps.core.models import DataSource, IngestionRun, IngestionRunStatus
+from apps.core.quality import DataState
 
 from .models import AQIMeasurement, AQIStation
 

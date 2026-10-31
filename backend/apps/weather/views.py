@@ -6,9 +6,9 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from apps.core.quality import DataState, freshness_state
+from apps.core.schemas import DocumentedAPIView
 from apps.core.serializers import source_summary
 from apps.locations.models import Area
 
@@ -19,7 +19,7 @@ from .selectors import (
     hourly_records,
     latest_retrieved_at,
 )
-from .serializers import WeatherRecordSerializer, WeatherLocationSerializer
+from .serializers import WeatherLocationSerializer, WeatherRecordSerializer
 
 
 def _area(request) -> Area:
@@ -37,7 +37,7 @@ def _source_of(records, area: Area):
     return location.source if location else None
 
 
-class WeatherCurrentView(APIView):
+class WeatherCurrentView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -64,7 +64,7 @@ class WeatherCurrentView(APIView):
         )
 
 
-class WeatherForecastView(APIView):
+class WeatherForecastView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -94,7 +94,7 @@ class WeatherForecastView(APIView):
         )
 
 
-class WeatherHistoryView(APIView):
+class WeatherHistoryView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -134,7 +134,7 @@ class WeatherHistoryView(APIView):
         )
 
 
-class WeatherLocationsView(APIView):
+class WeatherLocationsView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
+from apps.core.schemas import DocumentedAPIView
 from apps.environment.models import EnvironmentalObservation
 from apps.locations.models import Area
 
@@ -16,7 +16,7 @@ def _area(request) -> Area | None:
     return Area.objects.filter(slug=slug, is_active=True).first()
 
 
-class HeatPredictionsView(APIView):
+class HeatPredictionsView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -66,7 +66,7 @@ class HeatPredictionsView(APIView):
         )
 
 
-class HeatHotspotsView(APIView):
+class HeatHotspotsView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -127,7 +127,7 @@ class HeatHotspotsView(APIView):
         )
 
 
-class HeatModelInfoView(APIView):
+class HeatModelInfoView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):

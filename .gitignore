@@ -20,9 +20,12 @@ frontend/coverage/
 *.tsbuildinfo
 .vite/
 
-# ---- ML artifacts (large / environment-specific) ----
+# ---- ML artifacts and generated data (large / environment-specific) ----
 ml/models/*.joblib
 ml/models/*.pkl
+ml/artifacts/
+ml/data/raw/
+ml/data/processed/
 ml/datasets/private/
 ml/notebooks/.ipynb_checkpoints/
 

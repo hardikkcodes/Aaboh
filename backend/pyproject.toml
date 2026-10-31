@@ -1,0 +1,27 @@
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "slow: tests that perform heavier geospatial work",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+exclude = [
+    ".venv",
+    "migrations",
+    "staticfiles",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = [
+    "E501",  # line length is handled by the formatter; long URLs/docstrings are acceptable
+    "B008",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]

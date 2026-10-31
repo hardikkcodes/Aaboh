@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import json
 import math
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from pyproj import Geod, Transformer
 from shapely.geometry import Point, mapping, shape

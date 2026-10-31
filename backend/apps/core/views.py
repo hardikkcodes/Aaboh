@@ -2,15 +2,16 @@ from __future__ import annotations
 
 from django.conf import settings
 from django.db import connection
+from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from . import __version__
 from .models import DataSource
 from .quality import source_availability
+from .schemas import DocumentedAPIView
 from .sources import provider_configuration
 
 PUBLIC_MODULES = {
@@ -42,7 +43,53 @@ def _database_check() -> tuple[bool, str]:
         return False, "unavailable"
 
 
-class HealthView(APIView):
+class ApiRootView(DocumentedAPIView):
+    """Discoverable index of the public API surface."""
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        def link(name: str) -> str:
+            return request.build_absolute_uri(reverse(name))
+
+        return Response(
+            {
+                "name": settings.APP_CONFIG["name"],
+                "version": __version__,
+                "api_version": "v1",
+                "documentation": {
+                    "openapi": request.build_absolute_uri(reverse("schema")),
+                    "swagger": request.build_absolute_uri(reverse("swagger-ui")),
+                    "redoc": request.build_absolute_uri(reverse("redoc")),
+                },
+                "endpoints": {
+                    "health": link("core:health"),
+                    "readiness": link("core:readiness"),
+                    "system_config": link("core:system-config"),
+                    "data_status": link("core:data-status"),
+                    "areas": link("locations:area-list"),
+                    "location_search": link("locations:location-search"),
+                    "weather_current": link("weather:current"),
+                    "weather_forecast": link("weather:forecast"),
+                    "alerts": link("alerts:list"),
+                    "air_quality_stations": link("air_quality:stations"),
+                    "environment_layers": link("environment:layers"),
+                    "heat_predictions": link("heat:predictions"),
+                    "rainfall_forecast": link("rainfall:forecast"),
+                    "climate_trends": link("climate:trends"),
+                    "incidents": link("incidents:list-create"),
+                    "insights": link("intelligence:list"),
+                },
+                "notice": (
+                    "Environmental records include source, timestamp and quality metadata. Missing "
+                    "provider credentials produce explicit UNAVAILABLE states; no data is fabricated."
+                ),
+            }
+        )
+
+
+class HealthView(DocumentedAPIView):
     authentication_classes: list = []
     permission_classes = [AllowAny]
 
@@ -59,7 +106,7 @@ class HealthView(APIView):
         return Response(payload, status=status.HTTP_200_OK if db_ok else status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
-class ReadinessView(APIView):
+class ReadinessView(DocumentedAPIView):
     authentication_classes: list = []
     permission_classes = [AllowAny]
 
@@ -79,7 +126,7 @@ class ReadinessView(APIView):
         )
 
 
-class SystemConfigView(APIView):
+class SystemConfigView(DocumentedAPIView):
     authentication_classes: list = []
     permission_classes = [AllowAny]
 
@@ -99,7 +146,7 @@ class SystemConfigView(APIView):
         )
 
 
-class DataStatusView(APIView):
+class DataStatusView(DocumentedAPIView):
     authentication_classes: list = []
     permission_classes = [AllowAny]
 

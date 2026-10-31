@@ -12,6 +12,8 @@ import logging
 from datetime import date
 from statistics import mean
 
+from data_pipelines.normalization.weather import normalize_archive
+from data_pipelines.providers import open_meteo
 from django.conf import settings
 from django.utils import timezone
 
@@ -19,8 +21,6 @@ from apps.core.models import DataSource, IngestionRun, IngestionRunStatus
 from apps.core.quality import DataState
 from apps.locations.models import Area
 from apps.weather.models import WeatherLocation
-from data_pipelines.normalization.weather import normalize_archive
-from data_pipelines.providers import open_meteo
 
 from .models import ClimateBaseline, ClimateMetric, PeriodType
 
@@ -93,9 +93,7 @@ def _year_stats(days: list[dict], year: int) -> dict:
             if parsed.month not in _months_for_season(season):
                 continue
             if season == "DJF":
-                if parsed.month == 12 and parsed.year == year - 1:
-                    selected.append(day)
-                elif parsed.month in (1, 2) and parsed.year == year:
+                if parsed.month == 12 and parsed.year == year - 1 or parsed.month in (1, 2) and parsed.year == year:
                     selected.append(day)
             elif parsed.year == year:
                 selected.append(day)

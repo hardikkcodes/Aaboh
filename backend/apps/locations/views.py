@@ -5,7 +5,8 @@ from rest_framework import status
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
+
+from apps.core.schemas import DocumentedAPIView
 
 from .models import Area, GridCell, Neighbourhood
 from .serializers import AreaDetailSerializer, AreaListSerializer, GridCellSerializer
@@ -35,11 +36,12 @@ class AreaDetailView(RetrieveAPIView):
     queryset = (
         Area.objects.filter(is_active=True)
         .select_related("source")
+        .annotate(neighbourhood_count=Count("neighbourhoods", filter=Q(neighbourhoods__is_active=True)))
         .prefetch_related("neighbourhoods", "grid_definitions")
     )
 
 
-class AreaGridCellsView(APIView):
+class AreaGridCellsView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request, slug):
@@ -53,10 +55,7 @@ class AreaGridCellsView(APIView):
 
         version = request.query_params.get("version")
         definitions = area.grid_definitions.all()
-        if version:
-            definition = definitions.filter(version=version).first()
-        else:
-            definition = definitions.first()
+        definition = definitions.filter(version=version).first() if version else definitions.first()
         if definition is None:
             return Response(
                 {
@@ -83,7 +82,7 @@ class AreaGridCellsView(APIView):
         )
 
 
-class LocationSearchView(APIView):
+class LocationSearchView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):

@@ -2,20 +2,21 @@ from __future__ import annotations
 
 from django.db.models import Q
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from apps.core.models import DataSource
 from apps.core.quality import source_availability
+from apps.core.schemas import DocumentedAPIView
 from apps.core.serializers import source_summary
 
 from .models import AlertStatus, OfficialAlert
 from .serializers import OfficialAlertSerializer
 
 
-class AlertListView(APIView):
+class AlertListView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -60,9 +61,10 @@ class AlertListView(APIView):
         )
 
 
-class AlertDetailView(APIView):
+class AlertDetailView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(operation_id="alerts_detail")
     def get(self, request, pk):
         try:
             alert = OfficialAlert.objects.select_related("source").get(pk=pk)

@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 from django.db.models import Prefetch
+from drf_spectacular.utils import extend_schema
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsModerator
+from apps.core.schemas import DocumentedAPIView
 from apps.locations.models import Area
 
 from .models import Recommendation, RecommendationEvidence
-from .serializers import RecommendationSerializer
+from .serializers import InsightGenerateRequestSerializer, RecommendationSerializer
 from .services import RULESET_VERSION, generate_insights, persist_insights
 
 
@@ -22,7 +23,7 @@ def _area_from_request(request) -> Area:
         raise ValidationError({"area": f"Unknown area: {slug}"}) from exc
 
 
-class InsightsView(APIView):
+class InsightsView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -41,9 +42,10 @@ class InsightsView(APIView):
         return Response(payload)
 
 
-class InsightGenerateView(APIView):
+class InsightGenerateView(DocumentedAPIView):
     permission_classes = [IsModerator]
 
+    @extend_schema(request=InsightGenerateRequestSerializer)
     def post(self, request):
         slug = request.data.get("area", "kolkata")
         area = Area.objects.filter(slug=slug, is_active=True).first()
@@ -58,7 +60,7 @@ class InsightGenerateView(APIView):
         return Response(payload)
 
 
-class InsightHistoryView(APIView):
+class InsightHistoryView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -86,9 +88,10 @@ class InsightHistoryView(APIView):
         )
 
 
-class InsightDetailView(APIView):
+class InsightDetailView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(operation_id="insights_detail")
     def get(self, request, pk):
         try:
             recommendation = (

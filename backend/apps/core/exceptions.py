@@ -46,6 +46,8 @@ def api_exception_handler(exc, context):
         )
 
     code = getattr(exc, "default_code", None) or _STATUS_CODES.get(response.status_code, "error")
+    if isinstance(exc, ValidationError):
+        code = _STATUS_CODES[status.HTTP_400_BAD_REQUEST]
     details = None
     message = "Request could not be completed."
 
@@ -54,9 +56,7 @@ def api_exception_handler(exc, context):
         details = response.data
     elif isinstance(response.data, dict) and "detail" in response.data:
         message = str(response.data["detail"])
-    elif isinstance(response.data, dict):
-        details = response.data
-    elif isinstance(response.data, list):
+    elif isinstance(response.data, (dict, list)):
         details = response.data
     else:
         message = str(response.data)

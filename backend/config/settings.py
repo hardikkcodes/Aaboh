@@ -182,6 +182,9 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
+    "ENUM_NAME_OVERRIDES": {
+        "IncidentStatusEnum": "apps.incidents.models.IncidentStatus.choices",
+    },
     "TAGS": [
         {"name": "system", "description": "Health, configuration and data availability"},
         {"name": "locations", "description": "Areas, neighbourhoods and analytical grid"},

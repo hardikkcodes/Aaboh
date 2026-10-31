@@ -1,0 +1,1929 @@
+openapi: 3.0.3
+info:
+  title: Civic Climate Intelligence API
+  version: 0.1.0
+  description: Public environmental intelligence for Kolkata. Responses separate observation,
+    forecast, prediction, official warning and community report; source and freshness
+    metadata is returned with environmental records.
+paths:
+  /api/v1/:
+    get:
+      operationId: v1_retrieve
+      description: Discoverable index of the public API surface.
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/air-quality/measurements/:
+    get:
+      operationId: v1_air_quality_measurements_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/air-quality/stations/:
+    get:
+      operationId: v1_air_quality_stations_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/alerts/:
+    get:
+      operationId: v1_alerts_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/alerts/{id}/:
+    get:
+      operationId: alerts_detail
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/areas/:
+    get:
+      operationId: v1_areas_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AreaList'
+          description: ''
+  /api/v1/areas/{slug}/:
+    get:
+      operationId: v1_areas_retrieve
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaDetail'
+          description: ''
+  /api/v1/areas/{slug}/grid-cells/:
+    get:
+      operationId: v1_areas_grid_cells_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/login/:
+    post:
+      operationId: v1_auth_login_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: v1_auth_logout_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/register/:
+    post:
+      operationId: v1_auth_register_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+          description: ''
+  /api/v1/climate/metrics/:
+    get:
+      operationId: v1_climate_metrics_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/climate/trends/:
+    get:
+      operationId: v1_climate_trends_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/environment/cells/{cell_code}/:
+    get:
+      operationId: v1_environment_cells_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      parameters:
+      - in: path
+        name: cell_code
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/environment/layers/:
+    get:
+      operationId: v1_environment_layers_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/environment/observations/:
+    get:
+      operationId: v1_environment_observations_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/health/:
+    get:
+      operationId: v1_health_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/health/ready/:
+    get:
+      operationId: v1_health_ready_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/heat/hotspots/:
+    get:
+      operationId: v1_heat_hotspots_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/heat/model-info/:
+    get:
+      operationId: v1_heat_model_info_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/heat/predictions/:
+    get:
+      operationId: v1_heat_predictions_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/incidents/:
+    get:
+      operationId: v1_incidents_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedIncidentListList'
+          description: ''
+    post:
+      operationId: v1_incidents_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IncidentCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IncidentCreateRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentCreateRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentCreate'
+          description: ''
+  /api/v1/incidents/{id}/:
+    get:
+      operationId: v1_incidents_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentDetail'
+          description: ''
+    put:
+      operationId: v1_incidents_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentEditRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IncidentEditRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IncidentEditRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentEdit'
+          description: ''
+    patch:
+      operationId: v1_incidents_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedIncidentEditRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedIncidentEditRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedIncidentEditRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentEdit'
+          description: ''
+  /api/v1/incidents/{id}/history/:
+    get:
+      operationId: v1_incidents_history_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/incidents/{id}/moderate/:
+    post:
+      operationId: v1_incidents_moderate_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentModerationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IncidentModerationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IncidentModerationRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentDetail'
+          description: ''
+  /api/v1/incidents/summary/:
+    get:
+      operationId: v1_incidents_summary_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/insights/:
+    get:
+      operationId: v1_insights_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/insights/{id}/:
+    get:
+      operationId: insights_detail
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/insights/generate/:
+    post:
+      operationId: v1_insights_generate_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InsightGenerateRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InsightGenerateRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InsightGenerateRequestRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/insights/history/:
+    get:
+      operationId: v1_insights_history_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/locations/search/:
+    get:
+      operationId: v1_locations_search_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/rainfall/forecast/:
+    get:
+      operationId: v1_rainfall_forecast_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/rainfall/history/:
+    get:
+      operationId: v1_rainfall_history_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/system/config/:
+    get:
+      operationId: v1_system_config_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/system/data-status/:
+    get:
+      operationId: v1_system_data_status_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/users/me/:
+    get:
+      operationId: v1_users_me_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: v1_users_me_partial_update
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdateRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/users/me/preferences/:
+    patch:
+      operationId: v1_users_me_preferences_partial_update
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPreferenceUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPreferenceUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPreferenceUpdateRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/users/me/saved-locations/:
+    get:
+      operationId: v1_users_me_saved_locations_list
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SavedLocation'
+          description: ''
+    post:
+      operationId: v1_users_me_saved_locations_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavedLocationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SavedLocationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SavedLocationRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedLocation'
+          description: ''
+  /api/v1/users/me/saved-locations/{id}/:
+    delete:
+      operationId: v1_users_me_saved_locations_destroy
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/weather/current/:
+    get:
+      operationId: v1_weather_current_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/weather/forecast/:
+    get:
+      operationId: v1_weather_forecast_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/weather/history/:
+    get:
+      operationId: v1_weather_history_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/weather/locations/:
+    get:
+      operationId: v1_weather_locations_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+components:
+  schemas:
+    AreaDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        slug:
+          type: string
+          maxLength: 80
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          maxLength: 160
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        centroid: {}
+        centroid_lat:
+          type: number
+          format: double
+        centroid_lon:
+          type: number
+          format: double
+        area_km2:
+          type: number
+          format: double
+        source:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
+        source_ref:
+          type: string
+          maxLength: 200
+        neighbourhood_count:
+          type: integer
+          readOnly: true
+          default: 0
+        boundary:
+          readOnly: true
+        neighbourhoods:
+          type: array
+          items:
+            $ref: '#/components/schemas/Neighbourhood'
+          readOnly: true
+        grid_versions:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+        metadata: {}
+      required:
+      - area_km2
+      - boundary
+      - centroid
+      - centroid_lat
+      - centroid_lon
+      - grid_versions
+      - id
+      - name
+      - neighbourhood_count
+      - neighbourhoods
+      - slug
+      - source
+    AreaList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        slug:
+          type: string
+          maxLength: 80
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          maxLength: 160
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        centroid: {}
+        centroid_lat:
+          type: number
+          format: double
+        centroid_lon:
+          type: number
+          format: double
+        area_km2:
+          type: number
+          format: double
+        source:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
+        source_ref:
+          type: string
+          maxLength: 200
+        neighbourhood_count:
+          type: integer
+          readOnly: true
+          default: 0
+      required:
+      - area_km2
+      - centroid
+      - centroid_lat
+      - centroid_lon
+      - id
+      - name
+      - neighbourhood_count
+      - slug
+      - source
+    AuthToken:
+      type: object
+      properties:
+        token:
+          type: string
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+      required:
+      - token
+      - user
+    BlankEnum:
+      enum:
+      - ''
+    CategoryEnum:
+      enum:
+      - waterlogging
+      - flooding
+      - blocked_drainage
+      - fallen_tree
+      - road_disruption
+      - environmental_hazard
+      - other
+      type: string
+      description: |-
+        * `waterlogging` - Waterlogging
+        * `flooding` - Local flooding
+        * `blocked_drainage` - Blocked drainage
+        * `fallen_tree` - Fallen tree
+        * `road_disruption` - Road disruption
+        * `environmental_hazard` - Environmental hazard
+        * `other` - Other environmental incident
+    IncidentAttachment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        url:
+          type: string
+          readOnly: true
+        content_type:
+          type: string
+          maxLength: 100
+        size_bytes:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - content_type
+      - created_at
+      - id
+      - size_bytes
+      - url
+    IncidentCreate:
+      type: object
+      properties:
+        area:
+          type: string
+        neighbourhood:
+          type: string
+          nullable: true
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        description:
+          type: string
+          maxLength: 2000
+        occurred_at:
+          type: string
+          format: date-time
+        latitude:
+          type: number
+          format: double
+          maximum: 90
+          minimum: -90
+        longitude:
+          type: number
+          format: double
+          maximum: 180
+          minimum: -180
+        address_text:
+          type: string
+          maxLength: 200
+      required:
+      - area
+      - category
+      - description
+      - latitude
+      - longitude
+      - occurred_at
+    IncidentCreateRequest:
+      type: object
+      properties:
+        area:
+          type: string
+          minLength: 1
+        neighbourhood:
+          type: string
+          minLength: 1
+          nullable: true
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        occurred_at:
+          type: string
+          format: date-time
+        latitude:
+          type: number
+          format: double
+          maximum: 90
+          minimum: -90
+        longitude:
+          type: number
+          format: double
+          maximum: 180
+          minimum: -180
+        address_text:
+          type: string
+          maxLength: 200
+        attachments:
+          type: array
+          items:
+            type: string
+            format: binary
+          writeOnly: true
+          maxItems: 4
+      required:
+      - area
+      - category
+      - description
+      - latitude
+      - longitude
+      - occurred_at
+    IncidentDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        category_label:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          maxLength: 2000
+        occurred_at:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/IncidentStatusEnum'
+        status_label:
+          type: string
+          readOnly: true
+        verification_state:
+          type: string
+          readOnly: true
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        point: {}
+        address_text:
+          type: string
+          description: Optional coarse location description. Do not enter a home address.
+          maxLength: 200
+        area:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        neighbourhood:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
+        is_public:
+          type: boolean
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        attachments_count:
+          type: integer
+          readOnly: true
+        is_owner:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        source:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentAttachment'
+          readOnly: true
+        status_history:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentStatusHistory'
+          readOnly: true
+        moderation_note:
+          type: string
+          readOnly: true
+        potential_duplicates:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - area
+      - attachments
+      - attachments_count
+      - category
+      - category_label
+      - created_at
+      - description
+      - id
+      - is_owner
+      - latitude
+      - longitude
+      - moderation_note
+      - neighbourhood
+      - occurred_at
+      - point
+      - potential_duplicates
+      - source
+      - status_history
+      - status_label
+      - updated_at
+      - verification_state
+    IncidentEdit:
+      type: object
+      properties:
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        description:
+          type: string
+          maxLength: 2000
+        occurred_at:
+          type: string
+          format: date-time
+        address_text:
+          type: string
+          description: Optional coarse location description. Do not enter a home address.
+          maxLength: 200
+        neighbourhood:
+          type: string
+          nullable: true
+      required:
+      - category
+      - description
+      - occurred_at
+    IncidentEditRequest:
+      type: object
+      properties:
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        occurred_at:
+          type: string
+          format: date-time
+        address_text:
+          type: string
+          description: Optional coarse location description. Do not enter a home address.
+          maxLength: 200
+        neighbourhood:
+          type: string
+          minLength: 1
+          nullable: true
+      required:
+      - category
+      - description
+      - occurred_at
+    IncidentList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        category_label:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          maxLength: 2000
+        occurred_at:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/IncidentStatusEnum'
+        status_label:
+          type: string
+          readOnly: true
+        verification_state:
+          type: string
+          readOnly: true
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        point: {}
+        address_text:
+          type: string
+          description: Optional coarse location description. Do not enter a home address.
+          maxLength: 200
+        area:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        neighbourhood:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
+        is_public:
+          type: boolean
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        attachments_count:
+          type: integer
+          readOnly: true
+        is_owner:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        source:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+      required:
+      - area
+      - attachments_count
+      - category
+      - category_label
+      - created_at
+      - description
+      - id
+      - is_owner
+      - latitude
+      - longitude
+      - neighbourhood
+      - occurred_at
+      - point
+      - source
+      - status_label
+      - updated_at
+      - verification_state
+    IncidentModerationRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/IncidentStatusEnum'
+        note:
+          type: string
+          maxLength: 500
+        duplicate_of:
+          type: string
+          format: uuid
+          nullable: true
+        is_public:
+          type: boolean
+      required:
+      - status
+    IncidentStatusEnum:
+      enum:
+      - SUBMITTED
+      - UNDER_REVIEW
+      - VERIFIED
+      - RESOLVED
+      - REJECTED
+      - EXPIRED
+      - DUPLICATE
+      type: string
+      description: |-
+        * `SUBMITTED` - Submitted
+        * `UNDER_REVIEW` - Under review
+        * `VERIFIED` - Verified
+        * `RESOLVED` - Resolved
+        * `REJECTED` - Rejected
+        * `EXPIRED` - Expired
+        * `DUPLICATE` - Duplicate
+    IncidentStatusHistory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        from_status:
+          oneOf:
+          - $ref: '#/components/schemas/IncidentStatusEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        from_status_label:
+          type: string
+          readOnly: true
+        to_status:
+          $ref: '#/components/schemas/IncidentStatusEnum'
+        to_status_label:
+          type: string
+          readOnly: true
+        note:
+          type: string
+          maxLength: 500
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - from_status_label
+      - id
+      - to_status
+      - to_status_label
+    InsightGenerateRequestRequest:
+      type: object
+      properties:
+        area:
+          type: string
+          minLength: 1
+          pattern: ^[-a-zA-Z0-9_]+$
+    LevelEnum:
+      enum:
+      - city
+      - district
+      - ward
+      - neighbourhood
+      type: string
+      description: |-
+        * `city` - City / municipal corporation
+        * `district` - District
+        * `ward` - Ward
+        * `neighbourhood` - Neighbourhood
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    Neighbourhood:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 160
+        slug:
+          type: string
+          maxLength: 120
+          pattern: ^[-a-zA-Z0-9_]+$
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        source_ref:
+          type: string
+          maxLength: 200
+      required:
+      - id
+      - latitude
+      - longitude
+      - name
+      - slug
+    PaginatedIncidentListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentList'
+    PatchedIncidentEditRequest:
+      type: object
+      properties:
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        occurred_at:
+          type: string
+          format: date-time
+        address_text:
+          type: string
+          description: Optional coarse location description. Do not enter a home address.
+          maxLength: 200
+        neighbourhood:
+          type: string
+          minLength: 1
+          nullable: true
+    PatchedPreferenceUpdateRequest:
+      type: object
+      properties:
+        default_area:
+          type: string
+          nullable: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        temperature_unit:
+          $ref: '#/components/schemas/TemperatureUnitEnum'
+    PatchedProfileUpdateRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          maxLength: 80
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        display_name:
+          type: string
+          maxLength: 80
+      required:
+      - email
+      - password
+    RoleEnum:
+      enum:
+      - public
+      - moderator
+      - admin
+      type: string
+      description: |-
+        * `public` - Public user
+        * `moderator` - Moderator
+        * `admin` - Administrator
+    SavedLocation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        label:
+          type: string
+          maxLength: 80
+        area:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        point:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - label
+      - latitude
+      - longitude
+      - point
+    SavedLocationRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+        area:
+          type: string
+          minLength: 1
+          nullable: true
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+      required:
+      - label
+      - latitude
+      - longitude
+    TemperatureUnitEnum:
+      enum:
+      - C
+      - F
+      type: string
+      description: |-
+        * `C` - C
+        * `F` - F
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        display_name:
+          type: string
+          maxLength: 80
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        is_moderator:
+          type: boolean
+          readOnly: true
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+        preferences:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+      required:
+      - date_joined
+      - email
+      - id
+      - is_moderator
+      - preferences
+      - role
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"
+tags:
+- name: system
+  description: Health, configuration and data availability
+- name: locations
+  description: Areas, neighbourhoods and analytical grid
+- name: weather
+  description: Current conditions and forecasts
+- name: alerts
+  description: Official weather warnings
+- name: air-quality
+  description: Monitoring-station measurements
+- name: environment
+  description: Satellite-derived environmental observations
+- name: heat
+  description: Urban heat observations, hotspots and model predictions
+- name: rainfall
+  description: Rainfall forecast and history
+- name: climate
+  description: Long-term climate metrics and trends
+- name: incidents
+  description: Community environmental reports
+- name: insights
+  description: Transparent evidence-backed local guidance

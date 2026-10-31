@@ -129,20 +129,28 @@ class IncidentDetailSerializer(IncidentListSerializer):
     attachments = IncidentAttachmentSerializer(many=True, read_only=True)
     status_history = IncidentStatusHistorySerializer(many=True, read_only=True)
     moderation_note = serializers.SerializerMethodField()
+    potential_duplicates = serializers.SerializerMethodField()
 
     class Meta(IncidentListSerializer.Meta):
         fields = IncidentListSerializer.Meta.fields + [
             "attachments",
             "status_history",
             "moderation_note",
+            "potential_duplicates",
         ]
+
+    def get_potential_duplicates(self, obj) -> list[dict]:
+        from .services import find_potential_duplicates
+
+        return find_potential_duplicates(obj)
 
     def get_moderation_note(self, obj) -> str:
         request = self.context.get("request")
         user = getattr(request, "user", None)
-        if user and user.is_authenticated:
-            if getattr(user, "is_moderator", False) or obj.reporter_id == user.id:
-                return obj.moderation_note
+        if user and user.is_authenticated and (
+            getattr(user, "is_moderator", False) or obj.reporter_id == user.id
+        ):
+            return obj.moderation_note
         return ""
 
 

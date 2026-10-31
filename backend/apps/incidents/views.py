@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from django.db.models import Count
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.exceptions import NotAuthenticated, PermissionDenied, ValidationError
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
@@ -11,9 +12,9 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
-from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsModerator
+from apps.core.schemas import DocumentedAPIView
 from apps.locations.models import Area
 
 from .models import IncidentCategory, IncidentReport, IncidentStatus
@@ -27,7 +28,6 @@ from .serializers import (
     verification_state,
 )
 from .services import (
-    find_potential_duplicates,
     moderate_incident,
     visible_incidents,
 )
@@ -130,7 +130,6 @@ class IncidentListCreateView(ListCreateAPIView):
             incident,
             context={"request": request},
         ).data
-        detail["potential_duplicates"] = find_potential_duplicates(incident)
         return Response(detail, status=status.HTTP_201_CREATED)
 
 
@@ -170,9 +169,10 @@ class IncidentDetailView(RetrieveUpdateAPIView):
         return Response(IncidentDetailSerializer(incident, context={"request": request}).data)
 
 
-class IncidentModerateView(APIView):
+class IncidentModerateView(DocumentedAPIView):
     permission_classes = [IsModerator]
 
+    @extend_schema(request=IncidentModerationSerializer, responses={200: IncidentDetailSerializer})
     def post(self, request, pk):
         try:
             incident = _detail_queryset().get(pk=pk)
@@ -195,7 +195,7 @@ class IncidentModerateView(APIView):
         return Response(IncidentDetailSerializer(incident, context={"request": request}).data)
 
 
-class IncidentHistoryView(APIView):
+class IncidentHistoryView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request, pk):
@@ -218,7 +218,7 @@ class IncidentHistoryView(APIView):
         )
 
 
-class IncidentSummaryView(APIView):
+class IncidentSummaryView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):

@@ -4,10 +4,10 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from apps.core.models import DataSource
 from apps.core.quality import source_availability
+from apps.core.schemas import DocumentedAPIView
 from apps.core.serializers import source_summary
 from apps.locations.models import GridCell
 
@@ -53,7 +53,7 @@ def _gee_configured() -> bool:
     )
 
 
-class EnvironmentLayersView(APIView):
+class EnvironmentLayersView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -97,7 +97,7 @@ class EnvironmentLayersView(APIView):
         )
 
 
-class EnvironmentObservationsView(APIView):
+class EnvironmentObservationsView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -157,7 +157,7 @@ class EnvironmentObservationsView(APIView):
         )
 
 
-class EnvironmentCellDetailView(APIView):
+class EnvironmentCellDetailView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request, cell_code):

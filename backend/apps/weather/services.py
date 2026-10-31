@@ -4,6 +4,8 @@ import logging
 from datetime import date, timedelta
 from zoneinfo import ZoneInfo
 
+from data_pipelines.normalization.weather import normalize_archive, normalize_forecast
+from data_pipelines.providers import open_meteo
 from django.conf import settings
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -11,8 +13,6 @@ from django.utils.dateparse import parse_datetime
 from apps.core.models import DataSource, IngestionRun, IngestionRunStatus
 from apps.core.quality import DataState
 from apps.locations.models import Area
-from data_pipelines.normalization.weather import normalize_archive, normalize_forecast
-from data_pipelines.providers import open_meteo
 
 from .models import WeatherKind, WeatherLocation, WeatherRecord
 

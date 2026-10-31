@@ -87,6 +87,11 @@ class RegisterSerializer(serializers.Serializer):
         return user
 
 
+class AuthTokenSerializer(serializers.Serializer):
+    token = serializers.CharField(read_only=True)
+    user = UserSerializer(read_only=True)
+
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, trim_whitespace=False)
@@ -122,6 +127,11 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         return value
 
 
+class PreferenceUpdateSerializer(serializers.Serializer):
+    default_area = serializers.SlugField(required=False, allow_null=True, allow_blank=True)
+    temperature_unit = serializers.ChoiceField(choices=["C", "F"], required=False)
+
+
 class SavedLocationSerializer(serializers.ModelSerializer):
     area = serializers.SlugRelatedField(slug_field="slug", queryset=Area.objects.all(), required=False, allow_null=True)
     point = serializers.JSONField(read_only=True)
@@ -139,9 +149,12 @@ class SavedLocationSerializer(serializers.ModelSerializer):
         if not (-90 <= lat <= 90 and -180 <= lon <= 180):
             raise serializers.ValidationError({"latitude": "Coordinates are out of range."})
         area = attrs.get("area")
-        if area and area.boundary:
-            if not parse_geometry(area.boundary).covers(parse_geometry(point_geojson(lat, lon))):
-                raise serializers.ValidationError({"area": "Selected point is outside this area."})
+        if (
+            area
+            and area.boundary
+            and not parse_geometry(area.boundary).covers(parse_geometry(point_geojson(lat, lon)))
+        ):
+            raise serializers.ValidationError({"area": "Selected point is outside this area."})
         return attrs
 
     def create(self, validated_data):

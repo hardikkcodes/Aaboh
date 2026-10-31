@@ -6,7 +6,7 @@ configured and healthy while the most recent observation is stale.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from django.utils import timezone as dj_timezone
 
@@ -37,7 +37,7 @@ def ensure_aware(value: datetime | None) -> datetime | None:
     if value is None:
         return None
     if dj_timezone.is_naive(value):
-        return value.replace(tzinfo=timezone.utc)
+        return value.replace(tzinfo=UTC)
     return value
 
 
@@ -75,13 +75,16 @@ def source_availability(source) -> dict:
     )
 
     state = DataState.UNAVAILABLE
+    success_at = None
+    if last_success:
+        success_at = last_success.finished_at or last_success.started_at
     if latest and latest.status == IngestionRunStatus.RUNNING:
         state = DataState.PROCESSING
     elif latest and latest.status == IngestionRunStatus.PARTIAL:
         state = DataState.PARTIAL
-    elif last_success:
+    elif success_at:
         state = freshness_state(
-            last_success.finished_at,
+            success_at,
             max_age=max_age_for_source(source),
         )
     elif latest and latest.status == IngestionRunStatus.FAILED:
@@ -89,7 +92,7 @@ def source_availability(source) -> dict:
 
     return {
         "state": state,
-        "last_success_at": last_success.finished_at if last_success else None,
+        "last_success_at": success_at,
         "last_attempt_at": latest.started_at if latest else None,
         "last_attempt_status": latest.status if latest else None,
         "last_error": (latest.error_message or None) if latest else None,

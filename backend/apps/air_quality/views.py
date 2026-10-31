@@ -7,11 +7,11 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from apps.core.geometry import haversine_m
 from apps.core.models import DataSource
 from apps.core.quality import source_availability
+from apps.core.schemas import DocumentedAPIView
 from apps.core.serializers import source_summary
 from apps.locations.models import Area
 
@@ -19,7 +19,7 @@ from .models import AQIMeasurement, AQIStation
 from .serializers import AQIMeasurementSerializer, AQIStationSerializer
 
 
-class AirQualityStationsView(APIView):
+class AirQualityStationsView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -78,7 +78,7 @@ class AirQualityStationsView(APIView):
         )
 
 
-class AirQualityMeasurementsView(APIView):
+class AirQualityMeasurementsView(DocumentedAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
