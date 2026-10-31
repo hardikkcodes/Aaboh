@@ -1,6 +1,13 @@
 from django.urls import path
 
-from .views import InsightDetailView, InsightGenerateView, InsightHistoryView, InsightsView
+from .views import (
+    AreaPlaceStatusView,
+    InsightDetailView,
+    InsightGenerateView,
+    InsightHistoryView,
+    InsightsView,
+    PlaceStatusView,
+)
 
 app_name = "intelligence"
 
@@ -9,4 +16,10 @@ urlpatterns = [
     path("insights/generate/", InsightGenerateView.as_view(), name="generate"),
     path("insights/history/", InsightHistoryView.as_view(), name="history"),
     path("insights/<uuid:pk>/", InsightDetailView.as_view(), name="detail"),
+    path("place-status/", PlaceStatusView.as_view(), name="place-status"),
+    path(
+        "areas/<slug:slug>/place-status/",
+        AreaPlaceStatusView.as_view(),
+        name="area-place-status",
+    ),
 ]

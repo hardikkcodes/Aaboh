@@ -604,3 +604,200 @@ export interface SavedLocation {
   point: GeoJSONGeometry;
   created_at: string;
 }
+
+export type PlaceRiskLevel = "low" | "elevated" | "high" | "reports_only" | "unknown";
+export type PlaceStatusLevel = "typical" | "watch" | "attention" | "unknown";
+export type PlaceSignalLevel = "typical" | "info" | "caution" | "warning" | "unknown";
+
+export interface PlaceSignalInput {
+  key: string;
+  label: string;
+  value: number;
+  unit: string;
+  state: DataState;
+  source: SourceSummary;
+  observed_at: string | null;
+  contribution: number;
+  detail: string;
+}
+
+export interface PlaceWaterlogging {
+  state: DataState;
+  level: PlaceRiskLevel;
+  label: string;
+  points: number;
+  max_points: number;
+  method: {
+    id: string;
+    version: string;
+    label: string;
+    is_ml: boolean;
+    description: string;
+  };
+  inputs: PlaceSignalInput[];
+  drivers: string[];
+  reports: {
+    window_hours: number;
+    radius_km: number;
+    verified: number;
+    unverified: number;
+    total: number;
+  };
+  caveats: string[];
+}
+
+export interface PlaceWeather {
+  state: DataState;
+  record: WeatherRecord | null;
+  source: SourceSummary;
+  retrieved_at: string | null;
+  note: string;
+  reason: string | null;
+}
+
+export interface PlaceRain {
+  state: DataState;
+  next_24h_total_mm: number | null;
+  next_24h_max_probability_pct: number | null;
+  peak_hour: string | null;
+  peak_hour_mm: number | null;
+  source: SourceSummary;
+  retrieved_at: string | null;
+  note: string;
+  reason: string | null;
+}
+
+export interface PlaceRecentRain {
+  state: DataState;
+  max_daily_mm: number | null;
+  total_mm: number | null;
+  window_hours: number;
+  days_covered: number;
+  source: SourceSummary;
+  observed_at: string | null;
+  note: string;
+}
+
+export interface PlaceHeat {
+  state: DataState;
+  air: {
+    state: DataState;
+    temperature_c: number | null;
+    apparent_temperature_c: number | null;
+    value_c: number | null;
+    value_label: string | null;
+    level: PlaceSignalLevel;
+    observed_at: string | null;
+    retrieved_at: string | null;
+    source: SourceSummary;
+    note: string;
+    reason: string | null;
+  };
+  land_surface: {
+    state: DataState;
+    latest_date: string | null;
+    nearest_cell_lst_c: number | null;
+    nearest_cell_code: string | null;
+    distance_km: number | null;
+    city_p90_c: number | null;
+    observed_count: number;
+    source: SourceSummary;
+    note: string;
+    reason: string | null;
+  };
+}
+
+export interface PlaceAirQuality {
+  state: DataState;
+  station: { name: string; latitude: number; longitude: number } | null;
+  measurement: {
+    measured_at: string;
+    retrieved_at: string;
+    aqi: number | null;
+    aqi_category: string;
+    pm25: number | null;
+    pm10: number | null;
+    quality_status: string;
+  } | null;
+  distance_km: number | null;
+  level: PlaceSignalLevel;
+  source: SourceSummary;
+  note: string;
+  reason: string | null;
+}
+
+export interface PlaceAlert {
+  id: string;
+  title: string;
+  hazard: string;
+  hazard_label: string;
+  severity: string;
+  severity_label: string;
+  issued_at: string;
+  expires_at: string | null;
+  areas_text: string;
+  source_url: string;
+  source: SourceSummary;
+  quality_status: string;
+}
+
+export interface PlaceAlerts {
+  state: DataState;
+  count: number;
+  results: PlaceAlert[];
+  source: SourceSummary;
+  last_success_at: string | null;
+  note: string;
+  reason: string | null;
+}
+
+export interface PlaceReports {
+  state: DataState;
+  window_hours: number;
+  radius_km: number;
+  total: number;
+  verified: number;
+  unverified: number;
+  results: Incident[];
+  note: string;
+  reason: string | null;
+}
+
+export interface PlaceStatusResponse {
+  generated_at: string;
+  method_version: string;
+  place: {
+    area: { slug: string; name: string; centroid_lat: number; centroid_lon: number };
+    neighbourhood: {
+      slug: string;
+      name: string;
+      latitude: number;
+      longitude: number;
+    } | null;
+    label: string;
+    resolution: "area" | "neighbourhood";
+    center: { latitude: number; longitude: number };
+    scope_note: string;
+  };
+  status: {
+    level: PlaceStatusLevel;
+    headline: string;
+    reasons: string[];
+    state: DataState;
+  };
+  weather: PlaceWeather;
+  rain: PlaceRain;
+  recent_rain: PlaceRecentRain;
+  waterlogging: PlaceWaterlogging;
+  heat: PlaceHeat;
+  air_quality: PlaceAirQuality;
+  alerts: PlaceAlerts;
+  reports: PlaceReports;
+  coverage: {
+    available: number;
+    total: number;
+    modules: { key: string; label: string; state: DataState }[];
+  };
+  disclaimer: string;
+}
+

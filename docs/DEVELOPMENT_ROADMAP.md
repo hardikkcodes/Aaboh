@@ -218,6 +218,32 @@ localisation, and an end-to-end browser test suite.
 
 ---
 
+## Milestone 9b — Area-first place status
+
+**Status: Done (rule-based signal, not ML)**
+
+- `/place/<area>` and `/place/<area>/<neighbourhood>` aggregate weather, 24-hour
+  forecast rain, recent daily rain, a waterlogging risk indicator, heat, nearest
+  CPCB station air quality, active official warnings, and nearby public reports.
+- Header search and the home page both route to the place page instead of a
+  report list. The desktop navigation is reduced to five primary links plus one
+  compact "More" menu.
+- Every module carries its state, source, timestamp, and an explicit reason when
+  unavailable. The page shows module coverage and a disclaimer.
+- The waterlogging signal is a documented point score over forecast rain, recent
+  daily rain, verified nearby reports, and unverified nearby reports. It is not
+  trained, not a probability, and not a flood forecast. With no rainfall inputs
+  it returns `reports_only` or `unknown` rather than guessing.
+- Backend and frontend tests cover the aggregator, risk scoring, honest empty
+  states, route construction, and the place page.
+
+**Named gaps:** a real waterlogging model needs historical street-level labels,
+terrain and drainage features, and a validation gate. The current signal has no
+local drain, elevation, tide, or pump knowledge, so it can miss short
+street-scale flooding.
+
+---
+
 ## Milestone 10 — Operations and production readiness
 
 **Status: Partial**

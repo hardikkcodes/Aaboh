@@ -8,9 +8,10 @@ from rest_framework.response import Response
 
 from apps.accounts.permissions import IsModerator
 from apps.core.schemas import DocumentedAPIView
-from apps.locations.models import Area
+from apps.locations.models import Area, Neighbourhood
 
 from .models import Recommendation, RecommendationEvidence
+from .place_status import build_place_status
 from .serializers import InsightGenerateRequestSerializer, RecommendationSerializer
 from .services import RULESET_VERSION, generate_insights, persist_insights
 
@@ -21,6 +22,47 @@ def _area_from_request(request) -> Area:
         return Area.objects.get(slug=slug, is_active=True)
     except Area.DoesNotExist as exc:
         raise ValidationError({"area": f"Unknown area: {slug}"}) from exc
+
+
+def _place_from_request(request, area_slug: str | None = None):
+    slug = area_slug or request.query_params.get("area", "kolkata")
+    area = Area.objects.filter(slug=slug, is_active=True).first()
+    if area is None:
+        raise ValidationError({"area": f"Unknown area: {slug}"})
+
+    neighbourhood_slug = request.query_params.get("neighbourhood")
+    neighbourhood = None
+    if neighbourhood_slug:
+        neighbourhood = Neighbourhood.objects.filter(
+            area=area, slug=neighbourhood_slug, is_active=True
+        ).first()
+        if neighbourhood is None:
+            raise ValidationError(
+                {"neighbourhood": f"Unknown neighbourhood for {area.slug}: {neighbourhood_slug}"}
+            )
+    return area, neighbourhood
+
+
+class PlaceStatusView(DocumentedAPIView):
+    """Area-first status for a whole area or one of its neighbourhoods."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        area, neighbourhood = _place_from_request(request)
+        return Response(
+            build_place_status(area, neighbourhood=neighbourhood, user=request.user)
+        )
+
+
+class AreaPlaceStatusView(DocumentedAPIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug):
+        area, neighbourhood = _place_from_request(request, area_slug=slug)
+        return Response(
+            build_place_status(area, neighbourhood=neighbourhood, user=request.user)
+        )
 
 
 class InsightsView(DocumentedAPIView):

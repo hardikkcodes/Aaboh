@@ -1,10 +1,11 @@
-import { useEffect, useId, useRef, useState } from "react";
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
 
-import { useDataStatus, useLocationSearch } from "../../api/queries";
+import { useDataStatus } from "../../api/queries";
 import { useAuth } from "../../auth/context";
+import { PlaceSearch } from "../place/PlaceSearch";
 import { cn } from "../../lib/format";
-import { NAV_ITEMS } from "../../lib/constants";
+import { NAV_ITEMS, PRIMARY_NAV_ITEMS, SECONDARY_NAV_ITEMS } from "../../lib/constants";
 
 function BrandMark() {
   return (
@@ -17,114 +18,26 @@ function BrandMark() {
   );
 }
 
-function LocationSearch() {
-  const [term, setTerm] = useState("");
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const listId = useId();
-  const { data } = useLocationSearch(term);
-
-  useEffect(() => {
-    setOpen(false);
-    setTerm("");
-  }, [location.pathname]);
-
-  useEffect(() => {
-    function handleClick(event: MouseEvent) {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  const results = data?.results.slice(0, 7) ?? [];
-
-  return (
-    <div ref={containerRef} className="relative w-full max-w-xs">
-      <label htmlFor={listId} className="sr-only">
-        Search Kolkata neighbourhoods
-      </label>
-      <input
-        id={listId}
-        type="search"
-        value={term}
-        onFocus={() => setOpen(true)}
-        onChange={(event) => {
-          setTerm(event.target.value);
-          setOpen(true);
-        }}
-        placeholder="Search a neighbourhood…"
-        className="field !rounded-full !border-ink-100 !bg-ink-50/70 !py-2 pl-9 text-xs"
-        autoComplete="off"
-        aria-expanded={open}
-        aria-controls={`${listId}-results`}
-      />
-      <svg
-        viewBox="0 0 24 24"
-        className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-ink-400"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        aria-hidden="true"
-      >
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-3.5-3.5" />
-      </svg>
-      {open && term.trim().length >= 2 ? (
-        <div
-          id={`${listId}-results`}
-          className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-ink-100 bg-white shadow-panel"
-        >
-          {results.length ? (
-            <ul className="max-h-72 overflow-auto py-1">
-              {results.map((result) => (
-                <li key={`${result.type}-${result.id}`}>
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-ink-50"
-                    onClick={() => {
-                      setOpen(false);
-                      setTerm("");
-                      const params = new URLSearchParams({
-                        area: result.area_slug,
-                        lat: String(result.latitude),
-                        lon: String(result.longitude),
-                        name: result.name,
-                      });
-                      navigate(`/reports?${params.toString()}`);
-                    }}
-                  >
-                    <span>
-                      <span className="block font-medium text-ink-900">{result.name}</span>
-                      <span className="text-xs text-ink-500">
-                        {result.type === "area" ? "Area" : "Neighbourhood"} · {result.area_slug}
-                      </span>
-                    </span>
-                    <span className="text-xs text-ink-400">Reports</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="px-3 py-3 text-xs text-ink-500">No locality matches “{term}”.</p>
-          )}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, logout } = useAuth();
   const { data: status } = useDataStatus();
   const location = useLocation();
 
   useEffect(() => {
     setMobileOpen(false);
+    setMoreOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    function handleClick(event: MouseEvent) {
+      if (!moreRef.current?.contains(event.target as Node)) setMoreOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const unavailable = status
     ? Object.values(status.modules).filter((module) => module.state !== "AVAILABLE").length
@@ -144,7 +57,7 @@ export function Header() {
         </Link>
 
         <nav className="hidden items-center gap-0.5 xl:flex" aria-label="Main navigation">
-          {NAV_ITEMS.map((item) => (
+          {PRIMARY_NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -159,11 +72,42 @@ export function Header() {
               {item.label}
             </NavLink>
           ))}
+          <div className="relative" ref={moreRef}>
+            <button
+              type="button"
+              onClick={() => setMoreOpen((open) => !open)}
+              aria-expanded={moreOpen}
+              className={cn(
+                "rounded-full px-2.5 py-2 text-[0.78rem] font-medium transition",
+                moreOpen ? "bg-ink-100 text-ink-900" : "text-ink-600 hover:bg-ink-100 hover:text-ink-900",
+              )}
+            >
+              More
+            </button>
+            {moreOpen ? (
+              <div className="absolute right-0 mt-2 w-52 overflow-hidden rounded-xl border border-ink-100 bg-white py-1 shadow-panel">
+                {SECONDARY_NAV_ITEMS.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      cn(
+                        "block px-3 py-2 text-sm",
+                        isActive ? "bg-ink-900 text-white" : "text-ink-700 hover:bg-ink-50",
+                      )
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </nav>
 
         <div className="flex items-center gap-2">
           <div className="hidden lg:block">
-            <LocationSearch />
+            <PlaceSearch />
           </div>
           <Link
             to="/methodology"
@@ -206,23 +150,26 @@ export function Header() {
 
       {mobileOpen ? (
         <div className="border-t border-ink-100 bg-white xl:hidden">
-          <div className="shell grid gap-1 py-4 sm:grid-cols-2">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={"end" in item ? item.end : false}
-                className={({ isActive }) =>
-                  cn(
-                    "rounded-lg px-3 py-2.5 text-sm font-medium",
-                    isActive ? "bg-ink-900 text-white" : "text-ink-700 hover:bg-ink-50",
-                  )
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-            <div className="mt-2 flex flex-wrap gap-2 border-t border-ink-100 pt-3 sm:col-span-2">
+          <div className="shell space-y-3 py-4">
+            <PlaceSearch size="lg" />
+            <div className="grid gap-1 sm:grid-cols-2">
+              {NAV_ITEMS.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={"end" in item ? item.end : false}
+                  className={({ isActive }) =>
+                    cn(
+                      "rounded-lg px-3 py-2.5 text-sm font-medium",
+                      isActive ? "bg-ink-900 text-white" : "text-ink-700 hover:bg-ink-50",
+                    )
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2 border-t border-ink-100 pt-3">
               {isAuthenticated ? (
                 <>
                   <Link to="/account" className="btn-secondary text-xs">

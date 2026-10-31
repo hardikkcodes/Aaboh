@@ -118,7 +118,7 @@ class IncidentListSerializer(serializers.ModelSerializer):
 
     def get_is_owner(self, obj) -> bool:
         request = self.context.get("request")
-        user = getattr(request, "user", None)
+        user = self.context.get("user") or getattr(request, "user", None)
         return bool(user and user.is_authenticated and obj.reporter_id == user.id)
 
     def get_source(self, obj) -> dict:

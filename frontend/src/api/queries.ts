@@ -19,6 +19,7 @@ import type {
   InsightsResponse,
   ModelInfoResponse,
   Paginated,
+  PlaceStatusResponse,
   RainfallForecastResponse,
   RainfallHistoryResponse,
   SavedLocation,
@@ -57,6 +58,8 @@ export const queryKeys = {
   incident: (id: string) => ["incidents", "detail", id] as const,
   incidentSummary: (area: string) => ["incidents", "summary", area] as const,
   insights: (area: string) => ["insights", area] as const,
+  placeStatus: (area: string, neighbourhood?: string | null) =>
+    ["place-status", area, neighbourhood ?? null] as const,
   search: (term: string) => ["locations", "search", term] as const,
   me: ["users", "me"] as const,
   savedLocations: ["users", "saved-locations"] as const,
@@ -253,6 +256,17 @@ export function useInsights(area = DEFAULT_AREA) {
     queryKey: queryKeys.insights(area),
     queryFn: () => get<InsightsResponse>("/insights/", { area }),
     staleTime: 5 * 60_000,
+  });
+}
+
+export function usePlaceStatus(area = DEFAULT_AREA, neighbourhood?: string | null) {
+  return useQuery({
+    queryKey: queryKeys.placeStatus(area, neighbourhood),
+    queryFn: () =>
+      get<PlaceStatusResponse>(`/areas/${area}/place-status/`, {
+        ...(neighbourhood ? { neighbourhood } : {}),
+      }),
+    staleTime: 60_000,
   });
 }
 

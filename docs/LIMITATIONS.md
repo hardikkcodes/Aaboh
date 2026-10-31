@@ -17,6 +17,8 @@ conflicts with marketing copy, this document wins.
 | Weather | Open-Meteo model output, not a station observation | Temperature/rain values are gridded model data; local microclimates can differ. |
 | Climate | ERA5-Land reanalysis at ~9 km through Open-Meteo | Annual/seasonal metrics are area-level, not neighbourhood observations. |
 | Rainfall | Derived from weather forecast/archive, not a rain gauge | No flood prediction; no street-level waterlogging inference from rainfall alone. |
+| Waterlogging signal | Rule-based points over forecast rain, recent daily rain, and nearby reports | Not a trained model, not a probability, and not a flood forecast. It does not know drain capacity, elevation, tide, or pumping. |
+| Waterlogging ML | No historical street-level labelled dataset, terrain/drainage features, or verified event labels | No trained waterlogging model, no accuracy claim, and no neighbourhood susceptibility map. |
 | Geography | OSM relation, not an official KMC boundary; localities are points | The ~200 km² area and 124 localities are community-maintained. There are no official wards or ward statistics. |
 | Grid | 1 km analytical cells, clipped to the boundary | Edge cells have partial coverage; satellite values are aggregations, not 1 km native measurements. |
 | Air quality geography | Stations are point locations | Values are never interpolated into a neighbourhood surface. |
@@ -43,6 +45,9 @@ database.
 
 ## 3. Spatial and infrastructure limits
 
+- **Place status is not street-level.** An area status uses the Kolkata forecast
+  point and a 5 km report radius; a neighbourhood status uses the locality point
+  and a 2.5 km radius. Two nearby streets can differ, and the response says so.
 - **No native PostGIS/GeoDjango in development.** Geometry is stored as
   validated GeoJSON and spatial predicates run in Python via Shapely/pyproj
   (ADR-003). This is unindexed and fine for one city / 250 cells, not for

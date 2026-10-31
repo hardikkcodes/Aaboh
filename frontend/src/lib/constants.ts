@@ -15,6 +15,24 @@ export const NAV_ITEMS = [
   { to: "/insights", label: "Insights" },
 ] as const;
 
+/** Desktop keeps the daily-use destinations visible. */
+export const PRIMARY_NAV_ITEMS = [
+  { to: "/", label: "Overview", end: true },
+  { to: "/weather", label: "Weather" },
+  { to: "/alerts", label: "Alerts" },
+  { to: "/reports", label: "Community" },
+  { to: "/insights", label: "Insights" },
+] as const;
+
+/** Everything else lives behind one compact menu. */
+export const SECONDARY_NAV_ITEMS = [
+  { to: "/heat", label: "Heat & environment" },
+  { to: "/rainfall", label: "Rainfall" },
+  { to: "/air-quality", label: "Air quality" },
+  { to: "/climate", label: "Climate" },
+  { to: "/methodology", label: "Methodology" },
+] as const;
+
 export const INCIDENT_CATEGORIES = [
   { value: "waterlogging", label: "Waterlogging" },
   { value: "flooding", label: "Local flooding" },

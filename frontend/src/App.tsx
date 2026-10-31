@@ -11,6 +11,7 @@ import { InsightsPage } from "./pages/InsightsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MethodologyPage } from "./pages/MethodologyPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { PlaceStatusPage } from "./pages/PlaceStatusPage";
 import { RainfallPage } from "./pages/RainfallPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ReportDetailPage } from "./pages/ReportDetailPage";
@@ -23,6 +24,8 @@ const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <HomePage /> },
+      { path: "place/:areaSlug", element: <PlaceStatusPage /> },
+      { path: "place/:areaSlug/:neighbourhoodSlug", element: <PlaceStatusPage /> },
       { path: "weather", element: <WeatherPage /> },
       { path: "alerts", element: <AlertsPage /> },
       { path: "air-quality", element: <AirQualityPage /> },

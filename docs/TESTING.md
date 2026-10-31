@@ -11,7 +11,7 @@ keeps them fast and deterministic, at the cost of not detecting upstream provide
 contract changes; those are caught by running the ingestion commands against a
 real environment (see `OPERATIONS.md`).
 
-**Current totals (2026-10-30):** 67 backend tests, 10 ML tests, 8 frontend
+**Current totals (2026-10-31):** 74 backend tests, 10 ML tests, 10 frontend
 tests. Treat these as a snapshot; use the commands below for the current count.
 
 ---
@@ -79,6 +79,7 @@ Location: `backend/tests/`. Pytest with `pytest-django` and a test database.
 | `test_providers_and_normalization.py` | Open-Meteo request bounds/errors and normalisation, IMD key requirement and warning classification, CPCB key requirement, pollutant grouping, AQI category boundaries |
 | `test_satellite_and_heat_pipeline.py` | Landsat ingestion provenance, missing acquisition time, unknown cells, artifact evaluation gate, non-operational default, prediction ingestion, refusal to serve unscored models, API disclaimer |
 | `test_services_and_insights.py` | Weather states, empty-state honesty for alerts/AQ/environment/heat, rainfall derivation, model metrics only when registered, observed-LST hotspots, caveated insights, evidence provenance, persisted insight permissions, structured errors |
+| `test_place_status.py` | Area-first aggregation, honest all-unavailable state, rule-based waterlogging points, verified vs unverified report caps, recent 48-hour rain coverage, unknown-neighbourhood rejection |
 
 ### Deliberately not covered
 
@@ -119,6 +120,7 @@ Location: `frontend/src/test/`. Vitest + Testing Library + jsdom.
 | --- | --- |
 | `format.test.ts` | Temperature conversion keeps units, missing values render as an em dash rather than zero, enum labels are humanised, long text truncation is deterministic |
 | `components.test.tsx` | Data-state labels, no notice for available layers, unavailable layer shows the reason and explicit gap, evidence provenance and the unverified community chip stay visible |
+| `place.test.tsx` | Area and neighbourhood route construction, place-page rendering, visible rule-based caveat, unavailable CPCB reason, nearby report list |
 
 The setup file imports `@testing-library/jest-dom`. These are unit/component
 tests, not end-to-end tests. They intentionally assert that missing values do not

@@ -148,6 +148,41 @@ curl "http://127.0.0.1:8000/api/v1/areas/kolkata/grid-cells/"
 
 ---
 
+## Place status
+
+| Method | Path | Query parameters |
+| --- | --- | --- |
+| GET | `/api/v1/place-status/` | `area` (default `kolkata`), `neighbourhood` (optional) |
+| GET | `/api/v1/areas/<slug>/place-status/` | `neighbourhood` (optional) |
+
+One area-first response composes the modules a resident needs: `weather`, `rain`
+(next 24 hours), `recent_rain` (yesterday's archive day plus today), `waterlogging`,
+`heat` (air and land surface), `air_quality` (nearest CPCB station), `alerts`,
+`reports` (nearby public submissions), `coverage`, and a short `status` summary.
+Every section carries `state`, its source, timestamps, and a `reason` when it is
+unavailable. `place.resolution` is `area` or `neighbourhood`; the search radius is
+5 km for an area and 2.5 km for a neighbourhood.
+
+`waterlogging` is a transparent point score, not a model:
+
+| Input | Maximum points |
+| --- | --- |
+| Forecast rain, next 24 h | 3 |
+| Highest daily rain, recent 48 h | 2 |
+| Verified nearby water reports | 2 |
+| Unverified nearby water reports | 1 |
+
+Levels are `low` (<2), `elevated` (2–3), and `high` (4+). If rainfall inputs are
+missing, the level is `reports_only` when reports exist and `unknown` otherwise.
+The response states `method.is_ml = false` and includes caveats. It must not be
+described as a trained prediction, a probability, or an official flood warning.
+
+```bash
+curl "http://127.0.0.1:8000/api/v1/areas/kolkata/place-status/?neighbourhood=park-street"
+```
+
+---
+
 ## Weather
 
 | Method | Path | Query parameters |

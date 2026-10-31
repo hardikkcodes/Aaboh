@@ -26,6 +26,7 @@ PostGIS is included, but native GeoDjango storage is not active yet (see
 | Satellite heat/environment | **Blocked on credential** | Landsat/GEE export and ingestion implemented; no Earth Engine credentials or grid asset, so layers report `UNAVAILABLE` |
 | Heat ML predictions | **No model exists** | Training/evaluation/registration/ingestion pipeline implemented and tested with synthetic fixtures only; no metrics are displayed |
 | Community reports | **Working** | Authenticated submissions, image sanitisation, duplicate hints, moderator workflow, audit history |
+| Area-first place status | **Working** | `/place/<area>` and neighbourhood pages aggregate weather, rain, a rule-based waterlogging signal, heat, air quality, alerts, and nearby reports with explicit states |
 | Insights | **Working** | Deterministic rules over stored evidence, with explicit data-availability caveats |
 | PostGIS / GeoDjango | **Not active** | Docker Compose + PostGIS service provided; development uses SQLite and a portable GeoJSON field |
 
@@ -106,9 +107,9 @@ Nginx, proxying `/api/`, `/media/`, and `/admin/` to Django.
 
 | Task | Command |
 | --- | --- |
-| Backend tests (67) | `cd backend; .venv\Scripts\python.exe -m pytest -q` |
+| Backend tests (73) | `cd backend; .venv\Scripts\python.exe -m pytest -q` |
 | ML tests (10) | `cd ml; ..\backend\.venv\Scripts\python.exe -m pytest tests -q` |
-| Frontend tests (8) | `cd frontend; npm.cmd test` |
+| Frontend tests (10) | `cd frontend; npm.cmd test` |
 | Type check | `cd frontend; npm.cmd run typecheck` |
 | Lint | `cd backend; .venv\Scripts\python.exe -m ruff check .` and `cd frontend; npm.cmd run lint` |
 | Django checks | `cd backend; .venv\Scripts\python.exe manage.py check` |

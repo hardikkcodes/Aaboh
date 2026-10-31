@@ -177,6 +177,31 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/areas/{slug}/place-status/:
+    get:
+      operationId: v1_areas_place_status_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/auth/login/:
     post:
       operationId: v1_auth_login_create
@@ -766,6 +791,24 @@ paths:
       operationId: v1_locations_search_retrieve
       description: APIView whose response schema is explicitly documented as a JSON
         object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/place-status/:
+    get:
+      operationId: v1_place_status_retrieve
+      description: Area-first status for a whole area or one of its neighbourhoods.
       tags:
       - v1
       security:
