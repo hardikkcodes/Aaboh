@@ -11,7 +11,7 @@ export type Catalogue = Record<string, string>;
 // A value already formatted in Bangla, such as a date, counts as one number.
 const NUMBER = /[\u0980-\u09FF][\u0980-\u09FF\s.,:০-৯]*(?:\s?[AP]M(?:\sIST)?)?|\d+(?:[.,]\d+)*/g;
 const BENGALI_DIGITS = "০১২৩৪৫৬৭৮৯";
-const SKIPPED = "SCRIPT,STYLE,CODE,PRE,INPUT,TEXTAREA,SELECT,OPTION".split(",");
+const SKIPPED = "SCRIPT,STYLE,CODE,PRE,INPUT,TEXTAREA".split(",");
 const ATTRIBUTES = ["placeholder", "aria-label", "title"];
 const MACHINE_TEXT = /^[\w.+-]+@|https?:|[A-Z]{3,}-[A-Z0-9]+-|^[\d\s.,:/-]+[A-Za-z]{0,2}$/;
 
@@ -49,12 +49,12 @@ function translateCore(text: string, catalogue: Catalogue): string | null {
     if (bare) return bare + (ending === "." ? "।" : ending);
   }
   // Long messages and "a · b · c" lines are built from pieces, so translate piece by piece.
-  for (const pattern of [/\s·\s/, /(?<=[.!?])\s+/]) {
+  for (const pattern of [/\s·\s/, /(?<=[.!?])\s+/, /,\s/, /\s-\s/]) {
     const pieces = text.split(pattern);
     if (pieces.length > 1) {
       const parts = pieces.map((piece) => translateCore(piece, catalogue));
       if (parts.some(Boolean)) {
-        const joiner = pattern.source.includes("·") ? " · " : " ";
+        const joiner = pattern.source.includes("·") ? " · " : pattern.source.startsWith(",") ? ", " : pattern.source.includes("-") ? " - " : " ";
         return parts.map((part, index) => part ?? pieces[index]).join(joiner);
       }
     }

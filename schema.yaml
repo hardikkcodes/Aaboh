@@ -558,6 +558,25 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/heat/guide/:
+    get:
+      operationId: v1_heat_guide_retrieve
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/heat/hotspots/:
     get:
       operationId: v1_heat_hotspots_retrieve
@@ -582,6 +601,25 @@ paths:
       operationId: v1_heat_model_info_retrieve
       description: APIView whose response schema is explicitly documented as a JSON
         object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/heat/place/:
+    get:
+      operationId: v1_heat_place_retrieve
+      description: How one point compares with the city. Shows nothing where satellites
+        don't cover yet.
       tags:
       - v1
       security:
@@ -1529,6 +1567,40 @@ paths:
                 $ref: '#/components/schemas/SavedRoute'
           description: ''
   /api/v1/users/me/routes/{id}/:
+    patch:
+      operationId: v1_users_me_routes_partial_update
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSavedRouteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSavedRouteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSavedRouteRequest'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedRoute'
+          description: ''
     delete:
       operationId: v1_users_me_routes_destroy
       description: APIView whose response schema is explicitly documented as a JSON
@@ -2685,6 +2757,19 @@ components:
         display_name:
           type: string
           maxLength: 80
+    PatchedSavedRouteRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+        points: {}
+        leave_at:
+          type: string
+          format: time
+          nullable: true
+          description: Usual leaving time, IST.
     RegisterRequest:
       type: object
       properties:

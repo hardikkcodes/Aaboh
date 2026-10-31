@@ -21,6 +21,7 @@ PostGIS is included, but native GeoDjango storage is not active yet (see
 | Waterlogging terrain | **Working for Kolkata** | Copernicus elevation per cell on the Rainfall page. Training is ready but waits for 300 real reports |
 | Bangla | **Working** | Translates the page and server text. Reports and official alert wording stay as written |
 | Place search and routes | **Needs a key for Google** | Set `GOOGLE_MAPS_API_KEY` and enable Places API (New) and Routes API. Without it, search uses local places and routes are drawn by hand |
+| Fresh data | **Working** | In development the backend refreshes live data in the background. Production uses `backend/scripts/ingest_loop.sh`. `manage.py refresh_data` runs one pass. Landsat and terrain exports stay manual |
 | Regional coverage | **Working** | North and South Kolkata (split at latitude 22.55, approximate), North and South 24 Parganas |
 | Kolkata geography | **Working** | OSM relation 9381363 boundary, 124 OSM locality points, 250-cell deterministic 1 km grid in EPSG:32645 |
 | Weather forecast/current | **Working** | Live Open-Meteo ingestion; explicitly model output, not station observations |

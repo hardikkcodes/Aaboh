@@ -16,6 +16,8 @@ from apps.locations.models import Area
 from apps.weather.selectors import daily_records, history_records, hourly_records
 from apps.weather.serializers import WeatherRecordSerializer
 
+from .models import RainOutlook
+
 IST = ZoneInfo("Asia/Kolkata")
 
 
@@ -42,6 +44,7 @@ class RainfallForecastView(DocumentedAPIView):
         total_24h = round(sum((r.precipitation_mm or 0) for r in hourly), 2)
         peak_hour = max(hourly, key=lambda r: r.precipitation_mm or 0, default=None)
         max_probability = max((r.precipitation_probability or 0) for r in hourly) if hourly else None
+        outlook = RainOutlook.objects.filter(area=area.data_area).first()
         return Response(
             {
                 "area": {"slug": area.slug, "name": area.name},
@@ -55,6 +58,8 @@ class RainfallForecastView(DocumentedAPIView):
                     "peak_hour": peak_hour.valid_time if peak_hour else None,
                     "peak_hour_mm": peak_hour.precipitation_mm if peak_hour else None,
                 },
+                "outlook": outlook.payload if outlook else None,
+                "outlook_retrieved_at": outlook.retrieved_at if outlook else None,
                 "hourly": WeatherRecordSerializer(hourly, many=True).data,
                 "daily": WeatherRecordSerializer(daily, many=True).data,
                 "note": (

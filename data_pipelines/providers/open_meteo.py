@@ -69,6 +69,8 @@ DAILY_FIELDS = [
     "shortwave_radiation_sum",
     "uv_index_max",
 ]
+ENSEMBLE_URL = "https://ensemble-api.open-meteo.com/v1/ensemble"
+ENSEMBLE_MODELS = ("ecmwf_ifs025", "gfs025")
 COMPARISON_MODELS = ("ecmwf_ifs025", "gfs_seamless", "icon_seamless")
 ARCHIVE_DAILY_FIELDS = [
     "temperature_2m_mean",
@@ -130,6 +132,26 @@ def fetch_forecast(
         "timeformat": "iso8601",
     }
     return _request(FORECAST_URL, params, timeout)
+
+
+def fetch_rain_ensemble(
+    latitude: float,
+    longitude: float,
+    *,
+    forecast_days: int = 8,
+    timezone: str = DEFAULT_TIMEZONE,
+    timeout: float = 30,
+) -> dict:
+    """Every run of two global ensembles, so rain chances can be counted, not assumed."""
+    params = {
+        "latitude": round(latitude, 4),
+        "longitude": round(longitude, 4),
+        "hourly": "precipitation",
+        "models": ",".join(ENSEMBLE_MODELS),
+        "forecast_days": forecast_days,
+        "timezone": timezone,
+    }
+    return _request(ENSEMBLE_URL, params, timeout)
 
 
 def fetch_model_comparison(

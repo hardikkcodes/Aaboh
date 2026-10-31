@@ -12,7 +12,9 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      refetchOnWindowFocus: false,
+      // Open pages pick up new data on their own, and when someone comes back to the tab.
+      refetchOnWindowFocus: true,
+      refetchInterval: 15 * 60_000,
     },
   },
 });

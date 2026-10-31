@@ -205,7 +205,10 @@ class SavedRouteSerializer(serializers.ModelSerializer):
 
     def validate_label(self, value: str) -> str:
         value = value.strip()
-        if SavedRoute.objects.filter(user=self.context["request"].user, label=value).exists():
+        others = SavedRoute.objects.filter(user=self.context["request"].user, label=value)
+        if self.instance:
+            others = others.exclude(pk=self.instance.pk)
+        if others.exists():
             raise serializers.ValidationError("You already have a route with this name.")
         return value
 

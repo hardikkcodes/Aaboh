@@ -87,7 +87,11 @@ class AlertListView(DocumentedAPIView):
             feed_message = reason
         else:
             state = availability["state"]
-            reason = f"The official alert feed is unavailable and no stored alert covers {area.name}."
+            reason = (
+                "We couldn't check the official alert feed recently. Check SACHET or IMD directly."
+                if state == DataState.STALE
+                else "We can't read the official alert feed right now. Check SACHET or IMD directly."
+            )
             feed_message = reason
 
         return Response(
@@ -101,7 +105,9 @@ class AlertListView(DocumentedAPIView):
                 "named_count": named,
                 "results": OfficialAlertSerializer(scoped, many=True).data,
                 "scope_terms": list(settings.SACHET_SCOPE_TERMS) if source and source.slug == "sachet" else [],
+                "area": {"slug": area.slug, "name": area.name},
                 "feed_message": feed_message,
+                "feed_status": "ok" if state == DataState.AVAILABLE else "late" if state == DataState.STALE else "down",
                 "note": ALERT_NOTE,
                 "reason": reason,
             }

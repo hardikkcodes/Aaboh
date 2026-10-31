@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import {
   Bar,
   CartesianGrid,
@@ -14,6 +13,7 @@ import { useRainfallForecast, useRainfallHistory } from "../api/queries";
 import { DataStateNotice, StateBadge } from "../components/ui/DataState";
 import { ErrorState, LoadingPanel } from "../components/ui/Feedback";
 import { LowGroundMap } from "../components/weather/LowGroundMap";
+import { RainOutlookPanel } from "../components/weather/RainOutlookPanel";
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionHeading } from "../components/ui/SectionHeading";
 import { SourcePanel } from "../components/ui/SourcePanel";
@@ -59,6 +59,12 @@ export function RainfallPage() {
         <LoadingPanel label="Loading rainfall forecast" />
       ) : (
         <>
+          {forecast.data?.outlook ? (
+            <RainOutlookPanel outlook={forecast.data.outlook} updatedAt={forecast.data.outlook_retrieved_at} />
+          ) : null}
+
+          <LowGroundMap />
+
           <section className="grid gap-4 sm:grid-cols-3">
             <StatCard
               label="Next 24 hours"
@@ -67,9 +73,9 @@ export function RainfallPage() {
               tone="cool"
             />
             <StatCard
-              label="Highest chance of rain"
+              label="Highest hourly chance"
               value={formatPercent(forecast.data?.summary.next_24h_max_probability_pct)}
-              detail="In any one hour"
+              detail="Even a brief drizzle counts"
             />
             <StatCard
               label="Wettest hour"
@@ -92,8 +98,8 @@ export function RainfallPage() {
           <section>
             <SectionHeading
               eyebrow="Next 24 hours"
-              title="Hourly rain and probability"
-              description="Bars show forecast rainfall amount; the line shows the provider's probability. These are not observed gauge values."
+              title="Expected rain each hour"
+              description="Bars show how much rain is forecast. The line shows the chance of any rain that hour."
               action={forecast.data ? <StateBadge state={forecast.data.state} /> : null}
             />
             {hourlyData.length ? (
@@ -127,29 +133,7 @@ export function RainfallPage() {
             )}
           </section>
 
-          <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-            <div className="panel p-5 sm:p-6">
-              <p className="eyebrow">What this forecast cannot say</p>
-              <ul className="mt-3 space-y-3 text-sm leading-6 text-ink-600">
-                <li>
-                  <strong className="text-ink-900">Not a flood prediction.</strong> Rainfall totals do
-                  not account for drainage capacity, tides, soil saturation or local elevation.
-                </li>
-                <li>
-                  <strong className="text-ink-900">Not a waterlogging map.</strong> Community reports
-                  capture individual locations and remain unverified until moderated.
-                </li>
-                <li>
-                  <strong className="text-ink-900">Not an official warning.</strong> Check official alerts
-                  and follow KMC instructions during severe weather.
-                </li>
-              </ul>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Link to="/reports" className="btn-secondary text-xs">Community reports</Link>
-                <Link to="/alerts" className="btn-secondary text-xs">Official alerts</Link>
-              </div>
-            </div>
-
+          <section>
             <div>
               <SectionHeading
                 eyebrow="Previous 12 months"
@@ -210,7 +194,6 @@ export function RainfallPage() {
                     <tr>
                       <th>Date</th>
                       <th>Rainfall</th>
-                      <th>Probability</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -218,7 +201,6 @@ export function RainfallPage() {
                       <tr key={record.id}>
                         <td>{formatDate(record.valid_time)}</td>
                         <td>{formatWithUnit(record.precipitation_mm, "mm", 1)}</td>
-                        <td>{formatPercent(record.precipitation_probability)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -228,8 +210,6 @@ export function RainfallPage() {
           ) : null}
         </>
       )}
-
-      <LowGroundMap />
 
       <SourcePanel
         source={forecast.data?.source ?? history.data?.source}

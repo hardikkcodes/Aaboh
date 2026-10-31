@@ -163,11 +163,6 @@ export function PlaceStatusPage() {
           </div>
           <div className="flex flex-col items-start gap-2 sm:items-end">
             <StateBadge state={status.state} />
-            {status.confidence ? (
-              <span className="chip border-ink-200 bg-white text-ink-700" title={status.confidence_note}>
-                Headline confidence: {status.confidence}
-              </span>
-            ) : null}
             <p className="text-xs text-ink-500">
               Updated {formatRelative(data.generated_at)} · {formatDateTime(data.generated_at)}
             </p>

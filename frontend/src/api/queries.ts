@@ -32,6 +32,7 @@ import type {
   RainfallHistoryResponse,
   CycloneResponse,
   PlaceSuggestions,
+  HeatGuide,
   ReportHistory,
   RouteStatus,
   SavedLocation,
@@ -300,6 +301,26 @@ export function useReportHistory(area = currentArea(), neighbourhood?: string) {
     queryKey: ["incidents", "stats", area, neighbourhood],
     queryFn: () => get<ReportHistory>("/incidents/stats/", neighbourhood ? { area, neighbourhood } : { area }),
     staleTime: 10 * 60_000,
+  });
+}
+
+export function useHeatGuide(area = currentArea()) {
+  return useQuery({
+    queryKey: ["heat", "guide", area],
+    queryFn: () => get<HeatGuide>("/heat/guide/", { area }),
+    staleTime: 10 * 60_000,
+  });
+}
+
+export function useUpdateRoute() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, leave_at }: { id: string; leave_at: string | null }) => {
+      await api.patch(`/users/me/routes/${id}/`, { leave_at });
+    },
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["users", "routes"] });
+    },
   });
 }
 

@@ -75,6 +75,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "apps.core.freshness.AutoRefreshMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -285,6 +286,8 @@ SACHET_SCOPE_TERMS = env_list(
 ALERT_STATE_TERMS = env_list("ALERT_STATE_TERMS", "west bengal,gangetic bengal")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
+# Production runs the ingest loop instead.
+AUTO_REFRESH_DATA = env_bool("AUTO_REFRESH_DATA", DEBUG)
 GEE_PROJECT_ID = os.getenv("GEE_PROJECT_ID", "")
 GEE_SERVICE_ACCOUNT_EMAIL = os.getenv("GEE_SERVICE_ACCOUNT_EMAIL", "")
 GEE_SERVICE_ACCOUNT_KEY_FILE = os.getenv("GEE_SERVICE_ACCOUNT_KEY_FILE", "")

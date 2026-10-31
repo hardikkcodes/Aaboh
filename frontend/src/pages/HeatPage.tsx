@@ -10,6 +10,7 @@ import {
 } from "../api/queries";
 import type { HeatPrediction } from "../api/types";
 import { CellFeatureMap, type CellMapFeature } from "../components/map/CellFeatureMap";
+import { HeatGuide } from "../components/heat/HeatGuide";
 import { DataStateNotice, StateBadge } from "../components/ui/DataState";
 import { ErrorState, LoadingPanel } from "../components/ui/Feedback";
 import { Explain } from "../components/ui/Explain";
@@ -141,10 +142,12 @@ export function HeatPage() {
     <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
         eyebrow="Heat & environment"
-        title="How hot the ground gets"
-        description="Satellite maps of hot ground and rooftops, greenery, built-up land and water. Ground heat isn't the air temperature you feel, and this isn't an official heat warning."
+        title="Heat near you"
+        description="How hot it will feel today, when to avoid the sun, and which places run hotter or cooler."
         aside={<StateBadge state={layers.data?.state ?? "UNAVAILABLE"} />}
       />
+
+      <HeatGuide />
 
       <section className="grid gap-4 sm:grid-cols-3">
         <StatCard

@@ -17,6 +17,11 @@ from apps.locations.services.grid import generate_grid
 User = get_user_model()
 
 
+@pytest.fixture(autouse=True)
+def no_background_refresh(settings):
+    settings.AUTO_REFRESH_DATA = False
+
+
 @pytest.fixture
 def api_client() -> APIClient:
     return APIClient()

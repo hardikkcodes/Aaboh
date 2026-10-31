@@ -1,6 +1,6 @@
-import { Navigation } from "lucide-react";
-import { useState, type FormEvent } from "react";
-import { CircleMarker, Polyline, useMapEvents } from "react-leaflet";
+import { CircleCheck, Clock, Navigation, OctagonAlert, Trash2, TriangleAlert } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
+import { CircleMarker, Polyline, useMap, useMapEvents } from "react-leaflet";
 import { Link } from "react-router-dom";
 
 import { fieldErrors, normalizeError } from "../api/client";
@@ -8,14 +8,14 @@ import { api } from "../api/client";
 import type { PickedPlace, RoutePlan } from "../api/types";
 import { MyPlaces } from "../components/place/MyPlaces";
 import { PlacePicker } from "../components/place/PlacePicker";
-import { useCreateRoute, useDeleteRoute, useRoutes, useRouteStatus } from "../api/queries";
+import { useCreateRoute, useDeleteRoute, useRoutes, useRouteStatus, useUpdateRoute } from "../api/queries";
 import type { RouteStatus, SavedRoute } from "../api/types";
 import { useAuth } from "../auth/context";
 import { CivicMap } from "../components/map/CivicMap";
 import { ErrorState, InlineSpinner, LoadingPanel } from "../components/ui/Feedback";
 import { PageHeader } from "../components/ui/PageHeader";
 import { TRUST_META } from "../lib/constants";
-import { cn, formatRelative, formatTime, formatWithUnit } from "../lib/format";
+import { cn, formatRelative } from "../lib/format";
 import { useT } from "../lib/i18n";
 
 const MAX_POINTS = 12;
@@ -36,60 +36,105 @@ function DrawHandler({ onAdd }: { onAdd: (point: [number, number]) => void }) {
   return null;
 }
 
+const ROUTE_STATE = {
+  serious_reports: { title: "Serious problems reported", icon: OctagonAlert },
+  reports: { title: "Reports on your route", icon: TriangleAlert },
+  no_reports: { title: "No reports on your route", icon: CircleCheck },
+};
+
+function FitRoute({ points }: { points: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    map.fitBounds(points, { padding: [16, 16] });
+  }, [map, points]);
+  return null;
+}
+
 function RouteCard({ route }: { route: SavedRoute }) {
   const { t } = useT();
   const status = useRouteStatus(route.id);
   const remove = useDeleteRoute();
+  const update = useUpdateRoute();
   const data = status.data;
+  const state = data ? ROUTE_STATE[data.summary] : null;
+  const Icon = state?.icon;
 
   return (
-    <article className={cn("rounded-2xl border p-4", data ? SUMMARY_TONE[data.summary] : "border-ink-100 bg-white")}>
-      <div className="flex items-start justify-between gap-2">
-        <h2 className="font-display text-lg text-ink-950">{route.label}</h2>
-        <button
-          type="button"
-          className="text-xs text-ink-500 underline"
-          disabled={remove.isPending}
-          onClick={() => remove.mutate(route.id)}
-        >
-          Delete
-        </button>
-      </div>
-      {status.isError ? (
-        <p className="mt-2 text-sm text-red-800">Couldn't check this route. Try again shortly.</p>
-      ) : !data ? (
-        <p className="mt-2 text-sm text-ink-500">Checking…</p>
-      ) : (
-        <div className="mt-2 space-y-2 text-sm text-ink-800">
-          {data.official_alerts ? (
-            <p className="font-semibold text-red-900">
-              <Link to="/alerts" className="underline">{data.official_alerts} official warning(s) in effect</Link>
-            </p>
-          ) : null}
-          {data.reports.length ? (
-            <ul className="space-y-2">
-              {data.reports.map((report) => (
-                <li key={report.id}>
-                  <Link to={`/reports/${report.id}`} className="underline">{report.category_label}</Link>
-                  {report.place ? ` · ${report.place}` : ""}
-                  {report.water_depth_label ? ` · ${report.water_depth_label}` : ""}
-                  {report.passability_label ? ` · ${report.passability_label}` : ""}
-                  <span className="block text-xs text-ink-600">
-                    {TRUST_META[report.trust].label} · {formatRelative(report.occurred_at)} · {report.distance_m} m from your route
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>{t("No active reports along this route. That does not mean the road is clear.")}</p>
-          )}
-          <p className="text-xs text-ink-600">
-            {t("Rain, next 2 hours")}:{" "}
-            {data.rain.total_mm === null ? t("Not available") : formatWithUnit(data.rain.total_mm, "mm")}
-            {data.rain.next_rain_at ? ` · ${t("Rain likely around {time}", { time: formatTime(data.rain.next_rain_at) })}` : ""}
-          </p>
+    <article className={cn("overflow-hidden rounded-2xl border", data ? SUMMARY_TONE[data.summary] : "border-ink-100 bg-white")}>
+      <CivicMap height="130px" zoom={12} attribution={false}>
+        <FitRoute points={route.points} />
+        <Polyline positions={route.points} pathOptions={{ color: "#1f8a78", weight: 4 }} />
+      </CivicMap>
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-2">
+          <h2 data-original-text className="font-display text-lg text-ink-950">{route.label}</h2>
+          <button
+            type="button"
+            className="rounded p-1 text-ink-500 hover:bg-ink-100"
+            aria-label="Delete route"
+            disabled={remove.isPending}
+            onClick={() => remove.mutate(route.id)}
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+          </button>
         </div>
-      )}
+        {status.isError ? (
+          <p className="mt-2 text-sm text-red-800">Couldn't check this route. Try again shortly.</p>
+        ) : !data || !state || !Icon ? (
+          <p className="mt-2 text-sm text-ink-500">Checking…</p>
+        ) : (
+          <div className="mt-2 space-y-3 text-sm text-ink-800">
+            <p className="flex items-center gap-2 font-semibold text-ink-950">
+              <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+              {state.title}
+            </p>
+            {data.official_alerts ? (
+              <Link to="/alerts" className="block font-semibold text-red-900 underline">{`Official warnings in effect: ${data.official_alerts}`}</Link>
+            ) : null}
+            {data.reports.length ? (
+              <ul className="space-y-2">
+                {data.reports.map((report) => (
+                  <li key={report.id}>
+                    <Link to={`/reports/${report.id}`} className="underline">{report.category_label}</Link>
+                    {report.place ? ` · ${report.place}` : ""}
+                    {report.water_depth_label ? ` · ${report.water_depth_label}` : ""}
+                    {report.passability_label ? ` · ${report.passability_label}` : ""}
+                    <span className="block text-xs text-ink-600">
+                      {TRUST_META[report.trust].label} · {formatRelative(report.occurred_at)} · {`${report.distance_m} m from your route`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <dl className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-xl bg-white/60 p-2 dark:bg-ink-50">
+                <dt className="text-[0.68rem] text-ink-600">Distance</dt>
+                <dd className="font-semibold text-ink-950">{`${data.distance_km} km`}</dd>
+              </div>
+              <div className="rounded-xl bg-white/60 p-2 dark:bg-ink-50">
+                <dt className="text-[0.68rem] text-ink-600">Rain now</dt>
+                <dd className="font-semibold text-ink-950">{data.rain_chance_now_pct === null ? "—" : `${data.rain_chance_now_pct}%`}</dd>
+              </div>
+              <div className="rounded-xl bg-white/60 p-2 dark:bg-ink-50">
+                <dt className="text-[0.68rem] text-ink-600">When you leave</dt>
+                <dd className="font-semibold text-ink-950">{data.rain_chance_leaving_pct === null ? "—" : `${data.rain_chance_leaving_pct}%`}</dd>
+              </div>
+            </dl>
+            <label className="flex items-center justify-between gap-2 text-xs text-ink-700">
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="h-4 w-4" aria-hidden="true" />
+                {t("I usually leave at")}
+              </span>
+              <input
+                type="time"
+                className="field !w-auto !py-1 text-xs"
+                defaultValue={route.leave_at?.slice(0, 5) ?? ""}
+                onBlur={(event) => update.mutate({ id: route.id, leave_at: event.target.value || null })}
+              />
+            </label>
+          </div>
+        )}
+      </div>
     </article>
   );
 }
@@ -224,10 +269,10 @@ export function RoutesPage() {
       <PageHeader
         eyebrow="Commute"
         title={t("My routes")}
-        description="Reports within 300 m of the line you draw, plus rain in the next two hours."
+        description="Check your usual trips before you leave: reports along the way, and the chance of rain."
       />
-      <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
-        <div className="space-y-3">
+      <div className="space-y-5">
+        <div className="grid gap-4 md:grid-cols-2">
           {routes.isError ? (
             <ErrorState error={routes.error} onRetry={() => void routes.refetch()} />
           ) : routes.isLoading ? (

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
+from zoneinfo import ZoneInfo
+
 from django.db.models import Q
 from django.utils import timezone
 from shapely.geometry import LineString
@@ -14,10 +17,12 @@ from apps.intelligence.place_status import _alert_scope
 from apps.intelligence.today import rain_soon
 from apps.locations.models import Area
 from apps.locations.services.regions import area_for_point, reporting_areas
+from apps.rainfall.outlook import chance_at
 from apps.weather.selectors import hourly_records
 
 from .models import SavedRoute
 
+IST = ZoneInfo("Asia/Kolkata")
 ROUTE_BUFFER_M = 300
 BLOCKING_DEPTHS = {WaterDepth.WAIST, WaterDepth.ABOVE_WAIST}
 
@@ -59,9 +64,19 @@ def route_status(route: SavedRoute, *, now=None) -> dict:
         summary = "reports"
     else:
         summary = "no_reports"
+    leaving = None
+    if route.leave_at:
+        local = now.astimezone(IST)
+        leaving = local.replace(hour=route.leave_at.hour, minute=route.leave_at.minute, second=0, microsecond=0)
+        if leaving < local:
+            leaving += timedelta(days=1)
     return {
         "route": {"id": str(route.id), "label": route.label, "points": route.points},
         "checked_at": now,
+        "distance_km": round(route_line(route).length / 1000, 1),
+        "rain_chance_now_pct": chance_at(area, now) if area else None,
+        "leave_at": route.leave_at,
+        "rain_chance_leaving_pct": chance_at(area, leaving) if area and leaving else None,
         "summary": summary,
         "buffer_m": ROUTE_BUFFER_M,
         "official_alerts": official,

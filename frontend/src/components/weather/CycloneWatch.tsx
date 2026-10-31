@@ -2,6 +2,12 @@ import { Tornado } from "lucide-react";
 
 import { useCyclones } from "../../api/queries";
 
+const LEVELS: Record<string, string> = {
+  Red: "High impact expected where it lands.",
+  Orange: "Moderate impact expected where it lands.",
+  Green: "Low impact expected where it lands.",
+};
+
 /** Appears only while a storm is active in the Bay of Bengal or Arabian Sea. */
 export function CycloneWatch() {
   const cyclones = useCyclones().data?.results ?? [];
@@ -17,6 +23,7 @@ export function CycloneWatch() {
           <li key={storm.event_id}>
             <span data-original-text className="font-semibold">{storm.name}</span>
             {` is about ${storm.distance_km} km from Kolkata.`}
+            {LEVELS[storm.alert_level] ? <span className="ml-1 font-semibold">{LEVELS[storm.alert_level]}</span> : null}
             {storm.report_url ? (
               <>
                 {" "}

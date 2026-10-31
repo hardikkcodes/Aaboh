@@ -19,6 +19,7 @@ from apps.core.geometry import haversine_m
 from apps.core.quality import DataState, freshness_state
 from apps.incidents.services import live_reports
 from apps.locations.models import Area, Neighbourhood
+from apps.rainfall.models import RainOutlook
 from apps.weather.conditions import condition_for_code
 from apps.weather.models import DailyModelForecast
 from apps.weather.selectors import hourly_records, latest_retrieved_at
@@ -168,6 +169,18 @@ def model_agreement(area: Area, day) -> dict | None:
         "models": len(rain),
         "rain_low_mm": round(min(rain), 1),
         "rain_high_mm": round(max(rain), 1),
+    }
+
+
+def rain_chances(area: Area) -> dict | None:
+    outlook = RainOutlook.objects.filter(area=area.data_area).first()
+    if outlook is None or not outlook.payload["days"]:
+        return None
+    days = outlook.payload["days"]
+    return {
+        "next_24h_pct": outlook.payload["next_24h"]["chance_pct"],
+        "tomorrow_pct": days[1]["chance_pct"] if len(days) > 1 else None,
+        "tomorrow_typical_mm": days[1]["typical_mm"] if len(days) > 1 else None,
     }
 
 
@@ -346,6 +359,7 @@ def build_today(area: Area, *, neighbourhood: Neighbourhood | None = None, now=N
         },
         "best_outdoor_window": best_outdoor_window(hours),
         "cleanest_air_window": cleanest_air_window(area, now),
+        "rain_chances": rain_chances(area),
         "tomorrow_agreement": model_agreement(area, now.astimezone(IST).date() + timedelta(days=1)),
         "timeline": build_timeline(hours),
         "air": {"state": air["state"], "level": air["level"], "aqi": (air["measurement"] or {}).get("aqi")},

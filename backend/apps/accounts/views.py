@@ -257,6 +257,14 @@ class SavedRouteListCreateView(DocumentedAPIView):
 class SavedRouteDetailView(DocumentedAPIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=SavedRouteSerializer, responses={200: SavedRouteSerializer})
+    def patch(self, request, pk):
+        route = get_object_or_404(SavedRoute, pk=pk, user=request.user)
+        serializer = SavedRouteSerializer(route, data=request.data, partial=True, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
     def delete(self, request, pk):
         get_object_or_404(SavedRoute, pk=pk, user=request.user).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

@@ -8,6 +8,7 @@ while true; do
   python manage.py fetch_cyclones || echo "fetch_cyclones failed"
   if [ $((pass % 4)) -eq 0 ]; then
     python manage.py fetch_weather --all-areas || echo "fetch_weather failed"
+    python manage.py fetch_rain_outlook || echo "fetch_rain_outlook failed"
     python manage.py fetch_cpcb || echo "fetch_cpcb failed"
     python manage.py fetch_air_forecast --all-areas || echo "fetch_air_forecast failed"
   fi

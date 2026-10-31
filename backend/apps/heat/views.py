@@ -5,8 +5,11 @@ from rest_framework.response import Response
 
 from apps.core.schemas import DocumentedAPIView
 from apps.environment.models import EnvironmentalObservation
+from apps.intelligence.scorecard import place_scorecard
 from apps.locations.models import Area
+from apps.locations.services.regions import area_for_point
 
+from .guide import heat_guide
 from .models import CellPrediction, ModelVersion, PredictionRun, PredictionRunStatus
 from .serializers import CellPredictionSerializer, ModelVersionSerializer, PredictionRunSerializer
 
@@ -160,3 +163,35 @@ class HeatModelInfoView(DocumentedAPIView):
                 ),
             }
         )
+
+
+class HeatGuideView(DocumentedAPIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        slug = request.query_params.get("area", "kolkata")
+        area = Area.objects.filter(slug=slug, is_active=True).first()
+        if area is None:
+            return Response(
+                {"error": {"code": "not_found", "message": "Area not found.", "details": None}},
+                status=404,
+            )
+        return Response(heat_guide(area))
+
+
+class HeatPlaceView(DocumentedAPIView):
+    """How one point compares with the city. Shows nothing where satellites don't cover yet."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        try:
+            latitude = float(request.query_params["lat"])
+            longitude = float(request.query_params["lon"])
+        except (KeyError, ValueError):
+            return Response(
+                {"error": {"code": "invalid_point", "message": "Choose a place.", "details": None}},
+                status=400,
+            )
+        area = area_for_point(latitude, longitude)
+        return Response({"scorecard": place_scorecard(area, latitude, longitude) if area else None})

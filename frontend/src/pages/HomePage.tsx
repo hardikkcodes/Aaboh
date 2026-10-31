@@ -1,10 +1,10 @@
+import { CloudRain, Footprints, Wind } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useToday } from "../api/queries";
 import type { SignalLevel, TodayResponse, TodayTip } from "../api/types";
 import { useTemperatureUnit } from "../auth/context";
-import { AgreementChip } from "../components/weather/ForecastConfidence";
 import { LiveCityMap } from "../components/live/LiveCityMap";
 import { NearMeButton } from "../components/place/NearMeButton";
 import { PlaceSearch } from "../components/place/PlaceSearch";
@@ -105,14 +105,6 @@ function TodayBrief({ today }: { today: TodayResponse }) {
     : rain.next_rain_at
       ? t("Rain likely around {time}", { time: formatTime(rain.next_rain_at) })
       : t("No rain signal in the next 24 hours");
-  const windowLine = !hasForecast
-    ? null
-    : today.best_outdoor_window
-      ? t("Best time outdoors: {start} to {end}", {
-          start: formatTime(today.best_outdoor_window.start),
-          end: formatTime(today.best_outdoor_window.end),
-        })
-      : t("No clear dry, cooler window today");
 
   return (
     <div className="space-y-4">
@@ -121,7 +113,7 @@ function TodayBrief({ today }: { today: TodayResponse }) {
           <Tile
             label={t("Rain, next 2 hours")}
             value={formatWithUnit(rain.total_mm, "mm")}
-            detail={rainLine}
+            detail={today.rain_chances ? `${today.rain_chances.next_24h_pct}% chance in the next 24 hours` : rainLine}
             to="/rainfall"
           />
         )}
@@ -168,22 +160,40 @@ function TodayBrief({ today }: { today: TodayResponse }) {
         </section>
       ) : null}
 
-      <div className="space-y-1 text-sm font-medium text-ink-800">
-        {windowLine ? <p>{windowLine}</p> : null}
-        {today.tomorrow_agreement ? (
-          <p className="flex flex-wrap items-center gap-2">
-            {t("Tomorrow's rain forecast")}: <AgreementChip agreement={today.tomorrow_agreement} />
-          </p>
+      <section className="grid gap-3 sm:grid-cols-3">
+        {today.best_outdoor_window ? (
+          <Link to="/plan" className="panel block p-4">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-ink-600">
+              <Footprints className="h-4 w-4 text-brand" aria-hidden="true" />
+              {t("Best time outdoors")}
+            </p>
+            <p className="mt-1 text-lg font-semibold text-ink-950">
+              {formatTime(today.best_outdoor_window.start)} – {formatTime(today.best_outdoor_window.end)}
+            </p>
+          </Link>
+        ) : null}
+        {today.rain_chances?.tomorrow_pct != null ? (
+          <Link to="/rainfall" className="panel block p-4">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-ink-600">
+              <CloudRain className="h-4 w-4 text-brand" aria-hidden="true" />
+              {t("Rain tomorrow")}
+            </p>
+            <p className="mt-1 text-lg font-semibold text-ink-950">{`${today.rain_chances.tomorrow_pct}% chance`}</p>
+            <p className="mt-0.5 text-xs text-ink-600">{`About ${today.rain_chances.tomorrow_typical_mm} mm`}</p>
+          </Link>
         ) : null}
         {today.cleanest_air_window ? (
-          <p>
-            {t("Cleanest air: {start} to {end}", {
-              start: formatTime(today.cleanest_air_window.start),
-              end: formatTime(today.cleanest_air_window.end),
-            })}
-          </p>
+          <Link to="/air-quality" className="panel block p-4">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-ink-600">
+              <Wind className="h-4 w-4 text-brand" aria-hidden="true" />
+              {t("Cleanest air")}
+            </p>
+            <p className="mt-1 text-lg font-semibold text-ink-950">
+              {formatTime(today.cleanest_air_window.start)} – {formatTime(today.cleanest_air_window.end)}
+            </p>
+          </Link>
         ) : null}
-      </div>
+      </section>
 
       <CycloneWatch />
 

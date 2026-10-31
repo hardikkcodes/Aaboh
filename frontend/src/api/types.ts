@@ -224,6 +224,8 @@ export interface Alert {
 }
 
 export interface AlertsResponse {
+  feed_status: "ok" | "late" | "down";
+  area: { slug: string; name: string };
   state: DataState;
   provider?: string | null;
   source: SourceSummary;
@@ -431,6 +433,8 @@ export interface ModelInfoResponse {
 }
 
 export interface RainfallForecastResponse {
+  outlook: RainOutlook | null;
+  outlook_retrieved_at: string | null;
   area: { slug: string; name: string };
   state: DataState;
   source: SourceSummary;
@@ -763,6 +767,36 @@ export interface PlaceScorecard {
   note: string;
 }
 
+export interface RainOutlook {
+  runs: number;
+  next_24h: { chance_pct: number; typical_mm: number };
+  days: {
+    date: string;
+    chance_pct: number;
+    steady_chance_pct: number;
+    heavy_chance_pct: number;
+    typical_mm: number;
+    low_mm: number;
+    high_mm: number;
+  }[];
+  parts: { day: "today" | "tomorrow"; part: "morning" | "afternoon" | "evening" | "night"; chance_pct: number }[];
+  blocks: { start: string; chance_pct: number; typical_mm: number }[];
+}
+
+export interface HeatGuide {
+  today: {
+    peak_feels_c: number;
+    peak_at: string;
+    level: "comfortable" | "caution" | "high" | "dangerous";
+    avoid_from: string | null;
+    avoid_to: string | null;
+    uv_peak: number | null;
+  } | null;
+  hottest: { name: string; slug: string; ground_c: number }[];
+  coolest: { name: string; slug: string; ground_c: number }[];
+  months: { month: number; ground_c: number }[];
+}
+
 export interface ReportHistory {
   window_days: number;
   total: number;
@@ -834,6 +868,7 @@ export interface TodayResponse {
   cleanest_air_window: { start: string; end: string; pm25: number } | null;
   timeline: TimelineHour[];
   tomorrow_agreement: ModelAgreement | null;
+  rain_chances: { next_24h_pct: number; tomorrow_pct: number | null; tomorrow_typical_mm: number | null } | null;
   air: { state: DataState; level: SignalLevel; aqi: number | null };
   alerts: { state: DataState; count: number; feed_message: string };
   reports: { nearby: number; city: number; radius_km: number };
@@ -882,6 +917,10 @@ export interface RouteReport {
 }
 
 export interface RouteStatus {
+  distance_km: number;
+  rain_chance_now_pct: number | null;
+  leave_at: string | null;
+  rain_chance_leaving_pct: number | null;
   route: { id: string; label: string; points: [number, number][] };
   checked_at: string;
   summary: "serious_reports" | "reports" | "no_reports";
