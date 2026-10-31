@@ -10,15 +10,16 @@ conflicts with marketing copy, this document wins.
 
 | Area | Limitation | Consequence |
 | --- | --- | --- |
-| Official warnings | No IMD API key; the auth header is unconfirmed | The alerts page is empty and `UNAVAILABLE`. The platform cannot warn anyone. |
+| Official warnings | No IMD API key, so warnings come from SACHET only | Vague alerts that name only the state are shown as possibly affecting an area. An empty list doesn't mean no danger. |
 | Air quality | No CPCB/data.gov.in key; the host timed out during probing | No stations, no AQI, no pollutant history. |
-| Satellite heat | No Earth Engine credentials or registered grid asset; no real export has run | Heat/environment layers are `UNAVAILABLE`; there is no LST map. |
-| Heat ML | No labelled satellite dataset, no trained artifact | No predictions and no metrics are displayed. |
+| Satellite heat | Kolkata only, 84 Landsat dates from 2023 to 2026 | The 24 Parganas have no LST map. Cloud removes most monsoon dates. |
+| Heat ML | Model uses same-scene satellite inputs and over-estimates by about 1 °C on the test dates | It fills gaps rather than forecasts. It isn't active and no predictions are served. |
+| Area zones | North and South Kolkata are split at latitude 22.55, not an official line | Zones share Kolkata's reports, grid and climate records. |
 | Weather | Open-Meteo model output, not a station observation | Temperature/rain values are gridded model data; local microclimates can differ. |
 | Climate | ERA5-Land reanalysis at ~9 km through Open-Meteo | Annual/seasonal metrics are area-level, not neighbourhood observations. |
 | Rainfall | Derived from weather forecast/archive, not a rain gauge | No flood prediction; no street-level waterlogging inference from rainfall alone. |
 | Waterlogging signal | Rule-based points over forecast rain, recent daily rain, and nearby reports | Not a trained model, not a probability, and not a flood forecast. It does not know drain capacity, elevation, tide, or pumping. |
-| Waterlogging ML | No historical street-level labelled dataset, terrain/drainage features, or verified event labels | No trained waterlogging model, no accuracy claim, and no neighbourhood susceptibility map. |
+| Waterlogging ML | Terrain and historical rain are ready (250 cells, 85 wet days), but there are 0 real water reports to learn from, and no drainage data | No trained waterlogging model, no accuracy claim, and no neighbourhood susceptibility map. |
 | Geography | OSM relation, not an official KMC boundary; localities are points | The ~200 km² area and 124 localities are community-maintained. There are no official wards or ward statistics. |
 | Grid | 1 km analytical cells, clipped to the boundary | Edge cells have partial coverage; satellite values are aggregations, not 1 km native measurements. |
 | Air quality geography | Stations are point locations | Values are never interpolated into a neighbourhood surface. |

@@ -11,17 +11,13 @@ import { EmptyState, ErrorState, InlineSpinner, LoadingPanel } from "../componen
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionHeading } from "../components/ui/SectionHeading";
 import { StatCard } from "../components/ui/StatCard";
-import { MODULE_LABELS, SEVERITY_META, THRESHOLD_META } from "../lib/constants";
-import { formatDateTime, formatNumber, titleCase } from "../lib/format";
+import { SEVERITY_META } from "../lib/constants";
+import { formatDateTime, titleCase } from "../lib/format";
 
 const SEVERITIES = ["warning", "caution", "info"] as const;
 
 function isSubstantive(insight: Insight): boolean {
   return insight.kind !== "data_availability";
-}
-
-function thresholdMeta(key: string) {
-  return THRESHOLD_META[key] ?? { label: titleCase(key), unit: "", digits: 0 };
 }
 
 export function InsightsPage() {
@@ -34,10 +30,6 @@ export function InsightsPage() {
   const data = insights.data;
   const substantive = useMemo(
     () => (data?.insights ?? []).filter(isSubstantive),
-    [data?.insights],
-  );
-  const availability = useMemo(
-    () => (data?.insights ?? []).filter((insight) => !isSubstantive(insight)),
     [data?.insights],
   );
   const rules = useMemo(
@@ -56,27 +48,25 @@ export function InsightsPage() {
   return (
     <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
-        eyebrow="Decision support · rule engine"
-        title="Today's evidence-backed briefing"
-        description="Deterministic rules run over stored observations, forecasts and moderated community reports. Every statement links to its evidence. Missing inputs never produce an estimate."
+        title="What today's data means for you"
+        description="Each card says what is happening, what it means in plain words, what to do, and where the information came from."
         aside={data ? <StateBadge state={data.state} /> : null}
       />
 
       <DataStateNotice
         state={data?.state ?? "UNAVAILABLE"}
-        title="This is decision support, not an official warning"
+        title="A guide, not an official warning"
         reason={data?.disclaimer ?? "The briefing is unavailable until the insights endpoint responds."}
       >
         <p>
-          Follow instructions from IMD, KMC and emergency services. A rule that does not fire is not a
-          guarantee that conditions are safe.
+          Always follow IMD, KMC and emergency services.
         </p>
       </DataStateNotice>
 
       {insights.isError ? (
         <ErrorState error={insights.error} onRetry={() => void insights.refetch()} />
       ) : insights.isLoading ? (
-        <LoadingPanel label="Evaluating rules against stored evidence" rows={4} />
+        <LoadingPanel label="Reading today's data" rows={4} />
       ) : data ? (
         <>
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -192,7 +182,7 @@ export function InsightsPage() {
             ) : substantive.length ? (
               <EmptyState
                 className="mt-5"
-                title="No insights match these filters"
+                title="Nothing matches these filters"
                 description="Broaden the severity or rule filter. The underlying rule outputs still exist for the current stored data."
                 action={
                   <button
@@ -210,81 +200,12 @@ export function InsightsPage() {
             ) : (
               <EmptyState
                 className="mt-5"
-                title="No rule crossed its threshold"
-                description="No substantive insight was produced from the currently available evidence. This does not mean conditions are safe; it means the stored data did not meet a deterministic rule threshold."
-                action={<Link to="/methodology" className="btn-secondary text-sm">Read the thresholds</Link>}
+                title="Nothing unusual right now"
+                description="Today's data shows nothing that needs attention. That doesn't guarantee conditions are safe."
+                action={<Link to="/methodology" className="btn-secondary text-sm">How this works</Link>}
               />
             )}
           </section>
-
-          <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="panel p-5 sm:p-6">
-              <p className="eyebrow">Rule thresholds</p>
-              {data.thresholds ? (
-                <dl className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {Object.entries(data.thresholds).map(([key, value]) => {
-                    const meta = thresholdMeta(key);
-                    return (
-                      <div key={key} className="rounded-xl border border-ink-100 bg-ink-50 p-3">
-                        <dt className="text-[0.65rem] uppercase tracking-wide text-ink-500">{meta.label}</dt>
-                        {typeof value === "number" ? (
-                          <dd className="mt-1 text-sm font-semibold text-ink-900">
-                            {formatNumber(value, meta.digits)} {meta.unit}
-                          </dd>
-                        ) : (
-                          <dd className="mt-1 space-y-0.5">
-                            {Object.entries(value).map(([band, threshold]) => (
-                              <span key={band} className="block text-xs text-ink-700">
-                                <span className="font-semibold text-ink-900">{titleCase(band)}</span>{" "}
-                                at {formatNumber(threshold, meta.digits)} {meta.unit}
-                              </span>
-                            ))}
-                          </dd>
-                        )}
-                      </div>
-                    );
-                  })}
-                </dl>
-              ) : (
-                <p className="prose-civic mt-3">Threshold metadata is not exposed by this ruleset version.</p>
-              )}
-              <p className="mt-4 text-xs leading-5 text-ink-500">{data.methodology}</p>
-            </div>
-
-            <div className="panel p-5 sm:p-6">
-              <p className="eyebrow">Input availability</p>
-              <ul className="mt-3 space-y-2">
-                {data.data_availability.map((item) => (
-                  <li key={item.module} className="flex items-start justify-between gap-3 rounded-xl border border-ink-100 p-3">
-                    <div>
-                      <p className="text-sm font-medium text-ink-900">{MODULE_LABELS[item.module] ?? titleCase(item.module)}</p>
-                      {item.reason ? <p className="mt-0.5 text-xs leading-5 text-ink-500">{item.reason}</p> : null}
-                    </div>
-                    <StateBadge state={item.state} />
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-3 text-xs leading-5 text-ink-500">
-                A module marked unavailable is excluded from rule evaluation rather than replaced with a
-                placeholder value.
-              </p>
-            </div>
-          </section>
-
-          {availability.length ? (
-            <section>
-              <SectionHeading
-                eyebrow="Data-availability caveats"
-                title="What the briefing could not use"
-                description="These are explicit gaps in the evidence, not recommendations."
-              />
-              <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                {availability.map((insight) => (
-                  <InsightCard key={`${insight.rule_id}-availability`} insight={insight} />
-                ))}
-              </div>
-            </section>
-          ) : null}
 
           <p className="text-xs leading-5 text-ink-500">
             Generated {formatDateTime(data.generated_at)} IST for {data.area.name}. Ruleset{" "}

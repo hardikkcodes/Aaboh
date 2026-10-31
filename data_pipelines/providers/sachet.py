@@ -28,7 +28,7 @@ import requests
 
 IST = ZoneInfo("Asia/Kolkata")
 DEFAULT_ALERTS_PATH = "/cap_public_website/FetchAllAlertDetails"
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ClimateSense/0.1"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Aaboh/0.1"
 
 HAZARD_KEYWORDS = {
     "heavy_rain": ("heavy rain", "heavy rainfall", "very heavy", "extremely heavy", "light rain", "rainfall"),

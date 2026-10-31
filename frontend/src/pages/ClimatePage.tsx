@@ -19,7 +19,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { SectionHeading } from "../components/ui/SectionHeading";
 import { SourcePanel } from "../components/ui/SourcePanel";
 import { StatCard } from "../components/ui/StatCard";
-import { formatNumber, titleCase } from "../lib/format";
+import { formatNumber } from "../lib/format";
 
 function annualTemperatureData(points: ClimatePoint[] = []) {
   return points.map((point) => ({
@@ -75,9 +75,8 @@ export function ClimatePage() {
   return (
     <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
-        eyebrow="Climate · ERA5-Land reanalysis"
-        title="Long-term context for a hotter, wetter city"
-        description="Annual and seasonal metrics from ERA5-Land reanalysis (~9 km). These are area-level values for context, not neighbourhood observations, forecasts or causal attribution."
+        title="How the climate here is changing"
+        description="Decades of modelled weather history for this area, explained in plain words. Scroll down for the detailed charts."
         aside={data ? <StateBadge state={data.state} /> : null}
       />
 
@@ -311,10 +310,9 @@ export function ClimatePage() {
                 <ul className="mt-3 space-y-2 text-sm text-ink-700">
                   {data.baselines.map((baseline, index) => (
                     <li key={index} className="rounded-lg border border-ink-100 p-3">
-                      <span className="font-medium">{String(baseline.name ?? "Baseline")}</span>
+                      <span className="font-medium">{String(baseline.name ?? "Baseline").replace(/^\S+ ERA5-Land \d+-\d+ /, "")}</span>
                       <span className="mt-1 block text-xs text-ink-500">
                         {String(baseline.start_year ?? "—")}–{String(baseline.end_year ?? "—")} ·{" "}
-                        {String(baseline.variable ?? "variable")} ·{" "}
                         {baseline.value !== undefined && baseline.value !== null
                           ? `${formatNumber(Number(baseline.value), 2)} ${String(baseline.unit ?? "")}`
                           : "no value"}
@@ -339,8 +337,7 @@ export function ClimatePage() {
             extra={
               <p className="text-xs leading-5 text-ink-500">
                 Trends are ordinary-least-squares slopes on annual values. Short records and
-                autocorrelation limit causal interpretation. {titleCase(data.state)} state indicates
-                that at least one metric series is present.
+                autocorrelation limit causal interpretation.
               </p>
             }
           />

@@ -156,7 +156,7 @@ export function ReportDetailPage() {
               {report.is_owner ? <span className="chip border-sky-200 bg-sky-50 text-sky-800">Yours</span> : null}
             </div>
             {report.description ? (
-              <p className="mt-4 whitespace-pre-line text-sm leading-7 text-ink-700">{report.description}</p>
+              <p data-original-text className="mt-4 whitespace-pre-line text-sm leading-7 text-ink-700">{report.description}</p>
             ) : null}
             <div className="mt-4 rounded-xl border border-ink-100 bg-ink-50 p-4">
               <div className="flex flex-wrap items-center gap-2">

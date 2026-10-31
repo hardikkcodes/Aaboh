@@ -13,6 +13,7 @@ from apps.incidents.services import live_reports
 from apps.intelligence.place_status import _alert_scope
 from apps.intelligence.today import rain_soon
 from apps.locations.models import Area
+from apps.locations.services.regions import area_for_point, reporting_areas
 from apps.weather.selectors import hourly_records
 
 from .models import SavedRoute
@@ -39,7 +40,8 @@ def reports_on_route(route: SavedRoute, area: Area, *, now=None) -> list:
 
 def route_status(route: SavedRoute, *, now=None) -> dict:
     now = now or timezone.now()
-    area = Area.objects.filter(is_active=True).order_by("name").first()
+    latitude, longitude = route.points[0]
+    area = area_for_point(latitude, longitude) or reporting_areas().first()
     matches = reports_on_route(route, area, now=now) if area else []
     blocked = any(
         report.passability == Passability.NONE or report.water_depth in BLOCKING_DEPTHS

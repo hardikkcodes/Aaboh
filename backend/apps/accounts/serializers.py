@@ -37,12 +37,21 @@ class UserSerializer(serializers.ModelSerializer):
             "id",
             "email",
             "display_name",
+            "email_verified",
             "role",
             "is_moderator",
             "date_joined",
             "preferences",
         ]
-        read_only_fields = ["id", "email", "role", "is_moderator", "date_joined", "preferences"]
+        read_only_fields = [
+            "id",
+            "email",
+            "email_verified",
+            "role",
+            "is_moderator",
+            "date_joined",
+            "preferences",
+        ]
 
     def get_preferences(self, obj) -> dict:
         preference, _ = UserPreference.objects.get_or_create(user=obj)
@@ -91,6 +100,53 @@ class RegisterSerializer(serializers.Serializer):
         user.save()
         UserPreference.objects.get_or_create(user=user)
         return user
+
+
+def _checked_password(value: str, user=None) -> str:
+    try:
+        validate_password(value, user)
+    except DjangoValidationError as exc:
+        raise serializers.ValidationError(list(exc.messages)) from exc
+    return value
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+    def validate_new_password(self, value: str) -> str:
+        return _checked_password(value)
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    new_password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+    def validate_current_password(self, value: str) -> str:
+        if not self.context["request"].user.check_password(value):
+            raise serializers.ValidationError("Your current password is not correct.")
+        return value
+
+    def validate_new_password(self, value: str) -> str:
+        return _checked_password(value, self.context["request"].user)
+
+
+class VerifyEmailSerializer(serializers.Serializer):
+    token = serializers.CharField()
+
+
+class DeleteAccountSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+    def validate_password(self, value: str) -> str:
+        if not self.context["request"].user.check_password(value):
+            raise serializers.ValidationError("Your password is not correct.")
+        return value
 
 
 class AuthTokenSerializer(serializers.Serializer):

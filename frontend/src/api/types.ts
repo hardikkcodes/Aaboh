@@ -175,6 +175,7 @@ export interface WeatherHistoryResponse {
 }
 
 export interface Alert {
+  match?: "named" | "state" | null;
   id: string;
   external_id: string;
   title: string;
@@ -299,6 +300,24 @@ export interface EnvironmentFeature {
   };
 }
 
+export interface TerrainResponse {
+  type: "FeatureCollection";
+  state: DataState;
+  count: number;
+  source: string | null;
+  features: {
+    type: "Feature";
+    geometry: GeoJSONGeometry | null;
+    properties: {
+      cell_code: string;
+      susceptibility: number;
+      terrain_class: "high" | "medium" | "low";
+      elevation_m: number;
+      relative_elevation_m: number;
+    };
+  }[];
+}
+
 export interface EnvironmentObservationsResponse {
   type: "FeatureCollection";
   state: DataState;
@@ -352,6 +371,7 @@ export interface HeatHotspot {
   lst_c: number;
   valid_pixel_fraction: number;
   scene_id: string;
+  place: string;
 }
 
 export interface HeatHotspotsResponse {
@@ -380,7 +400,7 @@ export interface ModelInfoResponse {
     is_operational: boolean;
     limitations: string;
   } | null;
-  versions: unknown[];
+  versions: NonNullable<ModelInfoResponse["active_model"]>[];
   target: string;
   note: string;
   reason: string | null;
@@ -647,6 +667,7 @@ export interface User {
   id: string;
   email: string;
   display_name: string;
+  email_verified: boolean;
   role: string;
   is_moderator: boolean;
   date_joined: string;
@@ -728,12 +749,29 @@ export interface ModelStatus {
     };
     limitations: string[];
   } | null;
+  surface_heat: {
+    mae_c: number;
+    baseline_cell_month_mae_c: number;
+    r2: number;
+    n_test_rows: number;
+    n_test_dates: number;
+    n_train_dates: number;
+    test_start: string;
+  } | null;
   waiting: {
     key: string;
     name: string;
     note: string;
     progress: { label: string; value: number; target: number }[];
   }[];
+}
+
+export interface ModelAgreement {
+  level: "high" | "medium" | "low";
+  models_wet: number;
+  models: number;
+  rain_low_mm: number;
+  rain_high_mm: number;
 }
 
 export interface TodayResponse {
@@ -747,11 +785,13 @@ export interface TodayResponse {
     peak_heat_index_c: number | null;
     level: SignalLevel;
     night_low_c: number | null;
+    uv_peak: number | null;
     note: string;
   };
   best_outdoor_window: OutdoorWindow | null;
   cleanest_air_window: { start: string; end: string; pm25: number } | null;
   timeline: TimelineHour[];
+  tomorrow_agreement: ModelAgreement | null;
   air: { state: DataState; level: SignalLevel; aqi: number | null };
   alerts: { state: DataState; count: number; feed_message: string };
   reports: { nearby: number; city: number; radius_km: number };
@@ -767,6 +807,7 @@ export interface WeekPlanDay {
   peak_heat_index_c: number | null;
   condition: { code: number | null; label: string };
   best_window: OutdoorWindow | null;
+  agreement: ModelAgreement | null;
   hours_covered: number;
 }
 

@@ -239,11 +239,11 @@ def visible_incidents(queryset, user):
     return queryset.filter(is_public=True)
 
 
-def live_reports(area: Area, *, category: str | None = None, now=None):
+def live_reports(area: Area, *, category: str | None = None, now=None) -> list:
     """Public reports that are still believed to be current, newest first."""
     queryset = (
         IncidentReport.objects.filter(
-            area=area,
+            area=area.data_area,
             is_public=True,
             cleared_at__isnull=True,
             expires_at__gt=now or timezone.now(),
@@ -255,7 +255,10 @@ def live_reports(area: Area, *, category: str | None = None, now=None):
     )
     if category:
         queryset = queryset.filter(category=category)
-    return queryset[:LIVE_MAP_LIMIT]
+    reports = queryset[:LIVE_MAP_LIMIT]
+    if area != area.data_area:
+        return [report for report in reports if area.covers(report.latitude, report.longitude)]
+    return list(reports)
 
 
 def report_history(area: Area, *, neighbourhood: Neighbourhood | None = None, now=None) -> dict:
@@ -263,7 +266,7 @@ def report_history(area: Area, *, neighbourhood: Neighbourhood | None = None, no
     now = now or timezone.now()
     reports = (
         IncidentReport.objects.filter(
-            area=area, is_public=True, occurred_at__gte=now - HISTORY_WINDOW
+            area=area.data_area, is_public=True, occurred_at__gte=now - HISTORY_WINDOW
         )
         .exclude(status__in=[IncidentStatus.REJECTED, IncidentStatus.DUPLICATE])
         .select_related("neighbourhood")
@@ -275,6 +278,8 @@ def report_history(area: Area, *, neighbourhood: Neighbourhood | None = None, no
     by_month: Counter = Counter()
     spots: dict[str, dict] = {}
     for report in reports:
+        if area != area.data_area and not area.covers(report.latitude, report.longitude):
+            continue
         by_category[report.get_category_display()] += 1
         by_month[report.occurred_at.strftime("%Y-%m")] += 1
         if report.category in RECURRING_CATEGORIES and report.neighbourhood:

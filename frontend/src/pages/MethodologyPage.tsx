@@ -27,7 +27,7 @@ const EVIDENCE_TYPES = [
   },
   {
     title: "Official warning",
-    body: "A warning issued by an authoritative source, currently the India Meteorological Department. Only source-issued warnings are labelled official. The feed is unavailable without configured credentials.",
+    body: "A warning issued by an authoritative source, currently the national SACHET feed. Only source-issued warnings are labelled official. Some warnings name only the state, so they are shown as possibly affecting your area.",
   },
   {
     title: "Community report",
@@ -42,11 +42,11 @@ const EVIDENCE_TYPES = [
 const LIMITATIONS = [
   "The Kolkata boundary is a community-maintained OpenStreetMap relation (9381363), not an official KMC boundary or ward map. Area figures are computed from that geometry.",
   "Neighbourhoods are named OSM locality points, not official wards. Selecting a locality does not create a statistical area.",
-  "Official IMD alerts are unavailable until IMD_API_KEY and the correct key header are confirmed with IMD.",
+  "The IMD API is not connected. Forecasts come from weather models through Open-Meteo, and warnings come from SACHET.",
   "CPCB station air quality is unavailable until CPCB_API_KEY is configured and the data.gov.in resource can be reached. No station values are synthesised.",
-  "The Landsat/GEE pipeline is implemented but no credential-backed export has run. Satellite layers, hotspots and heat predictions therefore remain unavailable in this environment.",
+  "Satellite layers and hotspots cover Kolkata only. North and South 24 Parganas have no satellite images yet.",
   "ERA5-Land is a reanalysis at roughly 9 km resolution, accessed through Open-Meteo. Climate trends are descriptive OLS slopes, not attribution or local exposure estimates.",
-  "The heat ML pipeline has no real labelled dataset or evaluated artifact in this environment. No metrics are displayed without a reproducible evaluation run.",
+  "The surface-heat model is tested on real Landsat dates but is not in use, and no predictions are shown. It needs same-day satellite inputs, so it fills gaps rather than forecasting.",
   "Community reports can be mistaken, duplicated or stale. Moderation improves but does not guarantee accuracy. An empty map is not evidence of safety.",
 ];
 
@@ -59,9 +59,9 @@ export function MethodologyPage() {
   return (
     <div className="shell space-y-14 py-5 sm:py-8">
       <PageHeader
-        eyebrow="Methodology · limits · provenance"
-        title="How this platform knows what it knows"
-        description="Every number has a source, a time, a unit and a quality state. This page explains the evidence ladder, spatial framing, algorithms and the gaps that remain. Nothing here is filled in with synthetic data."
+        eyebrow="How it works"
+        title="How Aaboh works"
+        description="Where every number comes from, how we check it and what we can't tell you. Nothing here is made up."
         aside={data ? <StateBadge state={Object.values(data.modules).some((module) => module.state === "AVAILABLE") ? "PARTIAL" : "UNAVAILABLE"} /> : null}
       />
 
@@ -209,7 +209,7 @@ export function MethodologyPage() {
           <p className="eyebrow">Heat &amp; satellite</p>
           <h2 className="section-title mt-1">Land surface is not air temperature</h2>
           <p className="prose-civic mt-3">
-            Landsat Collection 2 Level 2 imagery is processed through Google Earth Engine for
+            Landsat Collection 2 Level 2 imagery is read from Microsoft Planetary Computer for
             land-surface temperature, NDVI, NDBI and MNDWI. Reflective bands are 30 m; the thermal
             product is delivered at 100 m. Values are aggregated to 1 km analytical cells, filtered for
             cloud cover and valid-pixel fraction. LST responds to surface materials and sun exposure; it
@@ -230,9 +230,8 @@ export function MethodologyPage() {
             ingested. Metrics are displayed only from a real evaluated artifact.
           </p>
           <p className="prose-civic mt-3">
-            In this environment no credential-backed Landsat dataset has been produced, so no model has
-            been trained, registered or used for prediction. The interface states this rather than
-            substituting a heuristic map.
+            A model has been trained on real Landsat dates and registered, but it isn't in use and
+            produces no predictions on this site. Its test results are on the Model status page.
           </p>
         </div>
       </section>

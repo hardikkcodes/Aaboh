@@ -9,6 +9,7 @@ from rest_framework import serializers
 from apps.core.geometry import parse_geometry, point_geojson
 from apps.core.serializers import source_summary
 from apps.locations.models import Area, Neighbourhood
+from apps.locations.services.regions import area_for_point
 
 from .models import (
     CommunitySpot,
@@ -210,7 +211,9 @@ class IncidentDetailSerializer(IncidentListSerializer):
 
 
 class IncidentCreateSerializer(serializers.Serializer):
-    area = serializers.SlugRelatedField(slug_field="slug", queryset=Area.objects.filter(is_active=True))
+    area = serializers.SlugRelatedField(
+        slug_field="slug", queryset=Area.objects.filter(is_active=True), required=False
+    )
     neighbourhood = serializers.SlugRelatedField(
         slug_field="slug",
         queryset=Neighbourhood.objects.filter(is_active=True),
@@ -249,7 +252,10 @@ class IncidentCreateSerializer(serializers.Serializer):
         return validate_coarse_address(value)
 
     def validate(self, attrs):
-        area: Area = attrs["area"]
+        area = attrs.get("area") or area_for_point(attrs["latitude"], attrs["longitude"])
+        if area is None:
+            raise serializers.ValidationError({"latitude": "This location is outside the covered areas."})
+        attrs["area"] = area
         category = attrs["category"]
         if category == IncidentCategory.OTHER and not attrs.get("description"):
             raise serializers.ValidationError({"description": "Describe what you observed."})
@@ -343,9 +349,8 @@ class CommunitySpotSerializer(serializers.ModelSerializer):
         return validate_coarse_address(value)
 
     def validate(self, attrs):
-        area = Area.objects.filter(is_active=True).order_by("name").first()
-        point = parse_geometry(point_geojson(attrs["latitude"], attrs["longitude"]))
-        if area is None or not parse_geometry(area.boundary).covers(point):
+        area = area_for_point(attrs["latitude"], attrs["longitude"])
+        if area is None:
             raise serializers.ValidationError({"latitude": "This place is outside the covered area."})
         attrs["area"] = area
         return attrs

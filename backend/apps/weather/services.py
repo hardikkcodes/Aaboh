@@ -14,7 +14,7 @@ from apps.core.models import DataSource, IngestionRun, IngestionRunStatus
 from apps.core.quality import DataState
 from apps.locations.models import Area
 
-from .models import WeatherKind, WeatherLocation, WeatherRecord
+from .models import DailyModelForecast, WeatherKind, WeatherLocation, WeatherRecord
 
 logger = logging.getLogger("apps.weather.ingestion")
 IST = ZoneInfo("Asia/Kolkata")
@@ -29,8 +29,9 @@ def _source() -> DataSource:
 
 
 def _location(area: Area, source: DataSource) -> WeatherLocation:
-    latitude = round(area.centroid_lat, 4)
-    longitude = round(area.centroid_lon, 4)
+    focus_lat, focus_lon = area.focus
+    latitude = round(focus_lat, 4)
+    longitude = round(focus_lon, 4)
     key = f"{latitude:.4f},{longitude:.4f}"
     location, _ = WeatherLocation.objects.get_or_create(
         source=source,
@@ -79,6 +80,26 @@ def _upsert_records(location: WeatherLocation, source: DataSource, records: list
     return written
 
 
+def ingest_model_comparison(location: WeatherLocation, *, forecast_days: int = 7) -> int:
+    daily = open_meteo.fetch_model_comparison(
+        location.latitude, location.longitude, forecast_days=forecast_days, timeout=settings.OPEN_METEO_TIMEOUT
+    ).get("daily") or {}
+    retrieved_at = timezone.now()
+    written = 0
+    for model in open_meteo.COMPARISON_MODELS:
+        rain = daily.get(f"precipitation_sum_{model}") or []
+        maxima = daily.get(f"temperature_2m_max_{model}") or []
+        for day, rain_mm, temperature in zip(daily.get("time") or [], rain, maxima, strict=False):
+            DailyModelForecast.objects.update_or_create(
+                location=location,
+                model=model,
+                valid_date=date.fromisoformat(day),
+                defaults={"rain_mm": rain_mm, "temperature_max_c": temperature, "retrieved_at": retrieved_at},
+            )
+            written += 1
+    return written
+
+
 def ingest_open_meteo(area: Area, *, forecast_days: int = 7) -> dict:
     if not settings.OPEN_METEO_ENABLED:
         raise WeatherIngestionError("Open-Meteo is disabled by configuration.")
@@ -114,6 +135,12 @@ def ingest_open_meteo(area: Area, *, forecast_days: int = 7) -> dict:
             kind=WeatherKind.CURRENT,
             retrieved_at__lt=timezone.now() - timedelta(days=2),
         ).delete()
+
+        try:
+            ingest_model_comparison(location, forecast_days=forecast_days)
+        except open_meteo.ProviderError as exc:
+            # The main forecast is still good; the comparison is simply left out.
+            logger.warning("Model comparison unavailable: %s", exc)
 
         run.status = IngestionRunStatus.SUCCESS
         run.records_fetched = len(records)

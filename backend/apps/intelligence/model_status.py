@@ -6,18 +6,16 @@ import json
 
 from django.conf import settings
 
-from apps.environment.models import EnvironmentalObservation
 from apps.incidents.models import IncidentCategory, IncidentConfirmation, IncidentReport
 
 WATERLOGGING_REPORT_TARGET = 300
 WATERLOGGING_CLEAR_TARGET = 300
-SATELLITE_OBSERVATION_TARGET = 500
-TRAINING_REPORT = settings.REPO_ROOT / "ml" / "reports" / "next_day.json"
+REPORTS = settings.REPO_ROOT / "ml" / "reports"
 
 
-def _training_report() -> dict | None:
+def _report(name: str) -> dict | None:
     try:
-        return json.loads(TRAINING_REPORT.read_text(encoding="utf-8"))
+        return json.loads((REPORTS / name).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
 
@@ -29,9 +27,9 @@ def build_model_status() -> dict:
     cleared = IncidentConfirmation.objects.filter(
         kind="cleared", incident__category__in=[IncidentCategory.WATERLOGGING, IncidentCategory.FLOODING]
     ).count()
-    report = _training_report()
     return {
-        "trained": report,
+        "trained": _report("next_day.json"),
+        "surface_heat": _report("land_surface_heat.json"),
         "waiting": [
             {
                 "key": "waterlogging",
@@ -41,18 +39,6 @@ def build_model_status() -> dict:
                     {"label": "Cleared confirmations", "value": cleared, "target": WATERLOGGING_CLEAR_TARGET},
                 ],
                 "note": "Needs real reports across a monsoon. Cleared votes teach the model when roads are dry.",
-            },
-            {
-                "key": "land_surface_heat",
-                "name": "Neighbourhood surface heat",
-                "progress": [
-                    {
-                        "label": "Satellite observations",
-                        "value": EnvironmentalObservation.objects.count(),
-                        "target": SATELLITE_OBSERVATION_TARGET,
-                    }
-                ],
-                "note": "Needs Google Earth Engine access to export Landsat data.",
             },
         ],
     }

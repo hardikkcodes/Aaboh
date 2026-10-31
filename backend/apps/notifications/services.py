@@ -19,6 +19,7 @@ from django.utils import timezone
 from apps.accounts.models import SavedLocation, SavedRoute, UserPreference
 from apps.accounts.routes import reports_on_route
 from apps.alerts.models import AlertStatus, OfficialAlert
+from apps.alerts.services import AlertMatch
 from apps.core.geometry import haversine_m
 from apps.incidents.models import IncidentCategory
 from apps.incidents.services import live_reports
@@ -30,6 +31,7 @@ from apps.intelligence.today import (
     rain_soon,
 )
 from apps.locations.models import Area
+from apps.locations.services.regions import area_for_point, reporting_areas
 from apps.weather.selectors import hourly_records
 
 from .models import Notification, NotificationKind
@@ -110,11 +112,12 @@ def _city_events(area: Area, now) -> list[dict]:
         .order_by("-issued_at")
     )
     for alert in alerts:
-        if _alert_scope(alert, area, None):
+        match = _alert_scope(alert, area, None)
+        if match:
             events.append(
                 {
                     "kind": NotificationKind.OFFICIAL_ALERT,
-                    "title": f"Official warning: {alert.get_hazard_display()}",
+                    "title": f"Official warning{' may include ' + area.name if match == AlertMatch.STATE else ''}: {alert.get_hazard_display()}",
                     "body": alert.title,
                     "link": "/alerts",
                     "key": f"alert:{alert.id}",
@@ -154,25 +157,35 @@ def _city_events(area: Area, now) -> list[dict]:
 
 def evaluate_alerts(*, now=None) -> dict:
     now = now or timezone.now()
-    area = Area.objects.filter(is_active=True).order_by("name").first()
+    areas = list(reporting_areas())
     created = 0
-    if area is None:
+    if not areas:
         return {"created": 0, "users": 0}
 
-    city_events = _city_events(area, now)
-    reports = [report for report in live_reports(area, now=now) if report.category in NOTIFY_CATEGORIES]
+    area_events = {area.id: _city_events(area, now) for area in areas}
+    reports = [
+        report
+        for area in areas
+        for report in live_reports(area, now=now)
+        if report.category in NOTIFY_CATEGORIES
+    ]
     # Accounts made outside sign-up, such as admins, have no preference row yet.
     for user in get_user_model().objects.filter(is_active=True, preferences__isnull=True):
         UserPreference.objects.get_or_create(user=user)
-    preferences = UserPreference.objects.filter(alerts_enabled=True, user__is_active=True).select_related("user")
+    preferences = UserPreference.objects.filter(alerts_enabled=True, user__is_active=True).select_related(
+        "user", "default_area"
+    )
 
     for preference in preferences:
         user = preference.user
-        for event in city_events:
+        home = preference.default_area.data_area if preference.default_area else areas[0]
+        for event in area_events.get(home.id, []):
             created += int(_notify(preference, **event))
 
         for route in SavedRoute.objects.filter(user=user):
-            for report, distance in reports_on_route(route, area, now=now):
+            latitude, longitude = route.points[0]
+            route_area = area_for_point(latitude, longitude) or home
+            for report, distance in reports_on_route(route, route_area, now=now):
                 if report.reporter_id == user.id or report.category not in NOTIFY_CATEGORIES:
                     continue
                 created += int(

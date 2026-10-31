@@ -12,17 +12,28 @@ from rest_framework.throttling import ScopedRateThrottle
 from apps.core.schemas import DocumentedAPIView
 from apps.incidents.models import ConfirmationKind, IncidentConfirmation, IncidentReport
 
-from .models import SavedLocation, SavedRoute, UserPreference
+from .emails import (
+    send_password_reset_email,
+    send_verification_email,
+    user_for_reset,
+    verify_email_token,
+)
+from .models import SavedLocation, SavedRoute, User, UserPreference
 from .routes import route_status
 from .serializers import (
     AuthTokenSerializer,
+    ChangePasswordSerializer,
+    DeleteAccountSerializer,
     LoginSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
     PreferenceUpdateSerializer,
     ProfileUpdateSerializer,
     RegisterSerializer,
     SavedLocationSerializer,
     SavedRouteSerializer,
     UserSerializer,
+    VerifyEmailSerializer,
 )
 
 IMPACT_LEVELS = [(20, "local_guardian"), (5, "street_watcher"), (1, "reporter")]
@@ -43,6 +54,7 @@ class RegisterView(AuthThrottleMixin, DocumentedAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         token, _ = Token.objects.get_or_create(user=user)
+        send_verification_email(user)
         return Response(
             {"token": token.key, "user": UserSerializer(user).data},
             status=status.HTTP_201_CREATED,
@@ -73,6 +85,86 @@ class LogoutView(DocumentedAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class PasswordResetRequestView(AuthThrottleMixin, DocumentedAPIView):
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(request=PasswordResetRequestSerializer, responses={204: None})
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = User.objects.filter(email__iexact=serializer.validated_data["email"], is_active=True).first()
+        if user:
+            send_password_reset_email(user)
+        # The same reply either way, so this can't reveal who has an account.
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PasswordResetConfirmView(AuthThrottleMixin, DocumentedAPIView):
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(request=PasswordResetConfirmSerializer, responses={204: None})
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = user_for_reset(serializer.validated_data["uid"], serializer.validated_data["token"])
+        if user is None:
+            return Response(
+                {"error": {"code": "invalid_link", "message": "This reset link is invalid or has expired.", "details": None}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user.set_password(serializer.validated_data["new_password"])
+        user.save(update_fields=["password"])
+        Token.objects.filter(user=user).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChangePasswordView(AuthThrottleMixin, DocumentedAPIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=ChangePasswordSerializer, responses={200: AuthTokenSerializer})
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+        user.set_password(serializer.validated_data["new_password"])
+        user.save(update_fields=["password"])
+        # Other devices are signed out; this one continues with a new token.
+        Token.objects.filter(user=user).delete()
+        token = Token.objects.create(user=user)
+        return Response({"token": token.key, "user": UserSerializer(user).data})
+
+
+class VerifyEmailView(AuthThrottleMixin, DocumentedAPIView):
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(request=VerifyEmailSerializer, responses={204: None})
+    def post(self, request):
+        serializer = VerifyEmailSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = verify_email_token(serializer.validated_data["token"])
+        if user is None:
+            return Response(
+                {"error": {"code": "invalid_link", "message": "This link is invalid or has expired.", "details": None}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user.email_verified = True
+        user.save(update_fields=["email_verified"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ResendVerificationView(AuthThrottleMixin, DocumentedAPIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=None, responses={204: None})
+    def post(self, request):
+        if not request.user.email_verified:
+            send_verification_email(request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class MeView(DocumentedAPIView):
     permission_classes = [IsAuthenticated]
 
@@ -86,6 +178,14 @@ class MeView(DocumentedAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(UserSerializer(request.user).data)
+
+    @extend_schema(request=DeleteAccountSerializer, responses={204: None})
+    def delete(self, request):
+        """Delete the account. Public reports stay, with no link back to the person."""
+        serializer = DeleteAccountSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        request.user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class SavedLocationListCreateView(DocumentedAPIView):

@@ -1,7 +1,7 @@
 .PHONY: help env install migrate backend frontend test test-backend test-frontend lint bootstrap ingest weather climate up down logs
 
 help:
-	@echo "Civic Climate Intelligence Platform"
+	@echo "Aaboh Platform"
 	@echo "  make install        Install backend + frontend dependencies"
 	@echo "  make migrate        Apply database migrations"
 	@echo "  make bootstrap      Import Kolkata boundary, localities and 1 km grid"

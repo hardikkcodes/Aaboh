@@ -9,7 +9,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 function safeNext(value: string | null): string {
   if (!value) return "/account";
   if (!value.startsWith("/") || value.startsWith("//")) return "/account";
-  if (value.startsWith("/login") || value.startsWith("/register")) return "/account";
+  if (value.startsWith("/login") || value.startsWith("/register") || value.startsWith("/reset-password")) return "/account";
   return value;
 }
 
@@ -55,7 +55,7 @@ export function LoginPage() {
         eyebrow="Account"
         title="Log in to report and personalise"
         description="An account is required only to submit community observations, follow your reports and save preferences. Weather, alerts, heat, rainfall, air quality and climate pages are public."
-        aside={<Link to="/register" className="btn-secondary text-sm">Create an account</Link>}
+        aside={<Link to="/register" className="btn-secondary text-sm">Sign up</Link>}
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
@@ -106,10 +106,10 @@ export function LoginPage() {
             {submitting ? <InlineSpinner label="Signing in" /> : "Log in"}
           </button>
 
-          <p className="text-xs leading-5 text-ink-500">
-            There is no automated password-reset flow in this prototype. If you cannot access your
-            account, contact the platform operator rather than creating a duplicate identity.
-          </p>
+          <div className="flex flex-wrap justify-between gap-2 text-sm">
+            <Link to="/forgot-password" className="link">Forgot password?</Link>
+            <Link to="/register" className="link">Sign up</Link>
+          </div>
         </form>
 
         <aside className="space-y-4">

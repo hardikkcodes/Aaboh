@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { currentArea } from "../lib/preferences";
 import { api } from "./client";
 import type {
   AirQualityMeasurementsResponse,
@@ -40,9 +41,9 @@ import type {
   WeatherForecastResponse,
   WeatherHistoryResponse,
   WeekPlanResponse,
+  TerrainResponse,
 } from "./types";
 
-const DEFAULT_AREA = "kolkata";
 
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   const response = await api.get<T>(url, { params });
@@ -96,7 +97,7 @@ export function useAreas() {
   });
 }
 
-export function useArea(slug = DEFAULT_AREA) {
+export function useArea(slug = currentArea()) {
   return useQuery({
     queryKey: queryKeys.area(slug),
     queryFn: () => get<AreaDetail>(`/areas/${slug}/`),
@@ -104,7 +105,7 @@ export function useArea(slug = DEFAULT_AREA) {
   });
 }
 
-export function useWeatherCurrent(area = DEFAULT_AREA) {
+export function useWeatherCurrent(area = currentArea()) {
   return useQuery({
     queryKey: queryKeys.weatherCurrent(area),
     queryFn: () => get<WeatherCurrentResponse>("/weather/current/", { area }),
@@ -112,7 +113,7 @@ export function useWeatherCurrent(area = DEFAULT_AREA) {
   });
 }
 
-export function useWeatherForecast(area = DEFAULT_AREA) {
+export function useWeatherForecast(area = currentArea()) {
   return useQuery({
     queryKey: queryKeys.weatherForecast(area),
     queryFn: () => get<WeatherForecastResponse>("/weather/forecast/", { area, hours: 48 }),
@@ -120,7 +121,7 @@ export function useWeatherForecast(area = DEFAULT_AREA) {
   });
 }
 
-export function useWeatherHistory(area = DEFAULT_AREA, days = 90) {
+export function useWeatherHistory(area = currentArea(), days = 90) {
   return useQuery({
     queryKey: queryKeys.weatherHistory(area, days),
     queryFn: () =>
@@ -132,15 +133,15 @@ export function useWeatherHistory(area = DEFAULT_AREA, days = 90) {
   });
 }
 
-export function useAlerts() {
+export function useAlerts(area = currentArea()) {
   return useQuery({
-    queryKey: queryKeys.alerts,
-    queryFn: () => get<AlertsResponse>("/alerts/"),
+    queryKey: [...queryKeys.alerts, area],
+    queryFn: () => get<AlertsResponse>("/alerts/", { area }),
     staleTime: 60_000,
   });
 }
 
-export function useAirStations(area = DEFAULT_AREA) {
+export function useAirStations(area = currentArea()) {
   return useQuery({
     queryKey: queryKeys.airStations(area),
     queryFn: () => get<AirQualityStationsResponse>("/air-quality/stations/", { area }),
@@ -169,6 +170,14 @@ export function useEnvironmentLayers() {
   });
 }
 
+export function useTerrain(area = currentArea()) {
+  return useQuery({
+    queryKey: ["environment", "terrain", area],
+    queryFn: () => get<TerrainResponse>("/environment/terrain/", { area }),
+    staleTime: 60 * 60_000,
+  });
+}
+
 export function useEnvironmentObservations(variable: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.environmentObservations(variable),
@@ -178,7 +187,7 @@ export function useEnvironmentObservations(variable: string, enabled = true) {
   });
 }
 
-export function useHeatPredictions(area = DEFAULT_AREA) {
+export function useHeatPredictions(area = currentArea()) {
   return useQuery({
     queryKey: queryKeys.heatPredictions(area),
     queryFn: () => get<HeatPredictionsResponse>("/heat/predictions/", { area }),
@@ -186,7 +195,7 @@ export function useHeatPredictions(area = DEFAULT_AREA) {
   });
 }
 
-export function useHeatHotspots(area = DEFAULT_AREA) {
+export function useHeatHotspots(area = currentArea()) {
   return useQuery({
     queryKey: queryKeys.heatHotspots(area),
     queryFn: () => get<HeatHotspotsResponse>("/heat/hotspots/", { area }),
@@ -202,7 +211,7 @@ export function useHeatModel() {
   });
 }
 
-export function useRainfallForecast(area = DEFAULT_AREA) {
+export function useRainfallForecast(area = currentArea()) {
   return useQuery({
     queryKey: queryKeys.rainfallForecast(area),
     queryFn: () => get<RainfallForecastResponse>("/rainfall/forecast/", { area }),
@@ -210,7 +219,7 @@ export function useRainfallForecast(area = DEFAULT_AREA) {
   });
 }
 
-export function useRainfallHistory(area = DEFAULT_AREA, days = 365) {
+export function useRainfallHistory(area = currentArea(), days = 365) {
   return useQuery({
     queryKey: queryKeys.rainfallHistory(area, days),
     queryFn: () => get<RainfallHistoryResponse>("/rainfall/history/", { area, days }),
@@ -218,7 +227,7 @@ export function useRainfallHistory(area = DEFAULT_AREA, days = 365) {
   });
 }
 
-export function useClimateTrends(area = DEFAULT_AREA) {
+export function useClimateTrends(area = currentArea()) {
   return useQuery({
     queryKey: queryKeys.climateTrends(area),
     queryFn: () => get<ClimateTrendsResponse>("/climate/trends/", { area }),
@@ -236,7 +245,7 @@ export interface IncidentFilters {
 
 export function useIncidents(filters: IncidentFilters = {}) {
   const params = {
-    area: filters.area ?? DEFAULT_AREA,
+    area: filters.area ?? currentArea(),
     ...(filters.category ? { category: filters.category } : {}),
     ...(filters.status ? { status: filters.status } : {}),
     ...(filters.since_hours ? { since_hours: filters.since_hours } : {}),
@@ -258,7 +267,7 @@ export function useIncident(id: string | undefined) {
   });
 }
 
-export function useIncidentSummary(area = DEFAULT_AREA) {
+export function useIncidentSummary(area = currentArea()) {
   return useQuery({
     queryKey: queryKeys.incidentSummary(area),
     queryFn: () => get<IncidentSummary>("/incidents/summary/", { area }),
@@ -266,7 +275,7 @@ export function useIncidentSummary(area = DEFAULT_AREA) {
   });
 }
 
-export function useToday(area = DEFAULT_AREA, neighbourhood?: string | null) {
+export function useToday(area = currentArea(), neighbourhood?: string | null) {
   return useQuery({
     queryKey: ["today", area, neighbourhood ?? null],
     queryFn: () =>
@@ -284,7 +293,7 @@ export function useModelStatus() {
   });
 }
 
-export function useReportHistory(area = DEFAULT_AREA) {
+export function useReportHistory(area = currentArea()) {
   return useQuery({
     queryKey: ["incidents", "stats", area],
     queryFn: () => get<ReportHistory>("/incidents/stats/", { area }),
@@ -325,7 +334,7 @@ export function useDeleteSpot() {
   });
 }
 
-export function useWeekPlan(area = DEFAULT_AREA) {
+export function useWeekPlan(area = currentArea()) {
   return useQuery({
     queryKey: ["week-plan", area],
     queryFn: () => get<WeekPlanResponse>("/planner/week/", { area }),
@@ -403,7 +412,7 @@ export function useImpact() {
   });
 }
 
-export function useLiveMap(category = "", area = DEFAULT_AREA) {
+export function useLiveMap(category = "", area = currentArea()) {
   return useQuery({
     queryKey: queryKeys.liveMap(area, category),
     queryFn: () =>
@@ -427,7 +436,7 @@ export function useConfirmIncident() {
   });
 }
 
-export function useInsights(area = DEFAULT_AREA) {
+export function useInsights(area = currentArea()) {
   return useQuery({
     queryKey: queryKeys.insights(area),
     queryFn: () => get<InsightsResponse>("/insights/", { area }),
@@ -435,7 +444,7 @@ export function useInsights(area = DEFAULT_AREA) {
   });
 }
 
-export function usePlaceStatus(area = DEFAULT_AREA, neighbourhood?: string | null) {
+export function usePlaceStatus(area = currentArea(), neighbourhood?: string | null) {
   return useQuery({
     queryKey: queryKeys.placeStatus(area, neighbourhood),
     queryFn: () =>

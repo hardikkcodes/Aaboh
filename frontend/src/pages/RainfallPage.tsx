@@ -13,6 +13,7 @@ import {
 import { useRainfallForecast, useRainfallHistory } from "../api/queries";
 import { DataStateNotice, StateBadge } from "../components/ui/DataState";
 import { ErrorState, LoadingPanel } from "../components/ui/Feedback";
+import { LowGroundMap } from "../components/weather/LowGroundMap";
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionHeading } from "../components/ui/SectionHeading";
 import { SourcePanel } from "../components/ui/SourcePanel";
@@ -46,9 +47,9 @@ export function RainfallPage() {
   return (
     <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
-        eyebrow="Rainfall · forecast and reanalysis"
-        title="Rain expected, with the difference from flooding kept explicit"
-        description="Forecast rainfall comes from Open-Meteo. Historical rainfall is ERA5-Land reanalysis. Neither is a local flood or waterlogging prediction; community reports and official warnings are separate layers."
+        eyebrow="Rainfall"
+        title="Rain forecast"
+        description="How much rain to expect and where water can gather. A forecast can't tell you if your street will flood, so check live reports too."
         aside={forecast.data ? <StateBadge state={forecast.data.state} /> : null}
       />
 
@@ -58,30 +59,25 @@ export function RainfallPage() {
         <LoadingPanel label="Loading rainfall forecast" />
       ) : (
         <>
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <section className="grid gap-4 sm:grid-cols-3">
             <StatCard
               label="Next 24 hours"
               value={forecast.data ? `${formatNumber(forecast.data.summary.next_24h_total_mm, 1)} mm` : "—"}
-              detail="Sum of provider hourly forecast values"
+              detail="Total rain expected"
               tone="cool"
             />
             <StatCard
-              label="Peak probability"
+              label="Highest chance of rain"
               value={formatPercent(forecast.data?.summary.next_24h_max_probability_pct)}
-              detail="Maximum hourly precipitation probability"
+              detail="In any one hour"
             />
             <StatCard
-              label="Peak hour"
+              label="Wettest hour"
               value={forecast.data?.summary.peak_hour ? formatHour(forecast.data.summary.peak_hour) : "—"}
               detail={forecast.data?.summary.peak_hour_mm !== null && forecast.data?.summary.peak_hour_mm !== undefined
                 ? `${formatNumber(forecast.data.summary.peak_hour_mm, 1)} mm in that hour`
-                : "No peak hour with rainfall"}
+                : "No rain expected"}
               tone="warm"
-            />
-            <StatCard
-              label="Forecast state"
-              value={forecast.data?.state ?? "—"}
-              detail={forecast.data?.retrieved_at ? `Retrieved ${formatDateTime(forecast.data.retrieved_at)}` : "No retrieval time"}
             />
           </section>
 
@@ -144,8 +140,8 @@ export function RainfallPage() {
                   capture individual locations and remain unverified until moderated.
                 </li>
                 <li>
-                  <strong className="text-ink-900">Not an official warning.</strong> Check the IMD
-                  warning layer and follow KMC instructions during severe weather.
+                  <strong className="text-ink-900">Not an official warning.</strong> Check official alerts
+                  and follow KMC instructions during severe weather.
                 </li>
               </ul>
               <div className="mt-4 flex flex-wrap gap-2">
@@ -215,7 +211,6 @@ export function RainfallPage() {
                       <th>Date</th>
                       <th>Rainfall</th>
                       <th>Probability</th>
-                      <th>State</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -224,7 +219,6 @@ export function RainfallPage() {
                         <td>{formatDate(record.valid_time)}</td>
                         <td>{formatWithUnit(record.precipitation_mm, "mm", 1)}</td>
                         <td>{formatPercent(record.precipitation_probability)}</td>
-                        <td className="text-xs uppercase tracking-wide text-ink-500">{record.quality_status}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -234,6 +228,8 @@ export function RainfallPage() {
           ) : null}
         </>
       )}
+
+      <LowGroundMap />
 
       <SourcePanel
         source={forecast.data?.source ?? history.data?.source}

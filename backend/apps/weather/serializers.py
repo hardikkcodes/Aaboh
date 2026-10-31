@@ -36,6 +36,7 @@ class WeatherRecordSerializer(serializers.ModelSerializer):
             "shortwave_radiation_wm2",
             "pressure_hpa",
             "visibility_m",
+            "uv_index",
             "weather_code",
             "is_day",
             "quality_status",

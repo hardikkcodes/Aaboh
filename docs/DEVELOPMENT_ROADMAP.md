@@ -295,6 +295,19 @@ scorecards and issue history (need a season of data); relief coordination.
 
 ---
 
+## Milestone 9f — Regions, satellite heat and plain language
+
+**Status: Done in code**
+
+- `bootstrap_regions` adds North and South 24 Parganas from OSM, and North and South
+  Kolkata as approximate zones split at latitude 22.55.
+- `pc_landsat_export` reads Landsat from Microsoft Planetary Computer without an
+  account. Satellite layers cover Kolkata only.
+- Alerts match as `named` or `state`, because some bulletins only name the state.
+- Forecasts add UV and agreement between ECMWF, GFS and ICON. `/learn` explains terms.
+
+---
+
 ## Milestone 10 — Operations and production readiness
 
 **Status: Partial**

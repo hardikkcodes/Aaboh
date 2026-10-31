@@ -17,7 +17,7 @@ from .serializers import ClimateMetricSerializer
 def _area(request) -> Area:
     slug = request.query_params.get("area", "kolkata")
     try:
-        return Area.objects.get(slug=slug, is_active=True)
+        return Area.objects.get(slug=slug, is_active=True).data_area
     except Area.DoesNotExist as exc:
         raise ValidationError({"area": f"Unknown area: {slug}"}) from exc
 

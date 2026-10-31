@@ -17,7 +17,7 @@ from django.utils import timezone
 
 from apps.air_quality.models import AQIStation
 from apps.alerts.models import AlertStatus, OfficialAlert
-from apps.alerts.services import scope_matches
+from apps.alerts.services import alert_match
 from apps.core.geometry import haversine_m, parse_geometry
 from apps.core.models import DataSource
 from apps.core.quality import DataState, source_availability
@@ -152,15 +152,15 @@ def _build_context(area: Area, now) -> RuleContext:
         OfficialAlert.objects.filter(status=AlertStatus.ACTIVE)
         .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
         .select_related("source")
-        .order_by("-issued_at")[:500]
+        .order_by("-issued_at")
     )
-    alerts = [alert for alert in alerts if _alert_covers_area(alert, area)]
+    alerts = [alert for alert in alerts if alert_match(alert, area)]
 
     stations = list(AQIStation.objects.filter(is_active=True).select_related("source"))
     nearest_station = None
     nearest_distance = None
     for station in stations:
-        distance = haversine_m(area.centroid_lat, area.centroid_lon, station.latitude, station.longitude)
+        distance = haversine_m(*area.focus, station.latitude, station.longitude)
         if distance > NEARBY_STATION_KM * 1000:
             continue
         if nearest_distance is None or distance < nearest_distance:
@@ -182,7 +182,7 @@ def _build_context(area: Area, now) -> RuleContext:
 
     verified_incidents = list(
         IncidentReport.objects.filter(
-            area=area,
+            area=area.data_area,
             is_public=True,
             cleared_at__isnull=True,
             status=IncidentStatus.VERIFIED,
@@ -194,7 +194,7 @@ def _build_context(area: Area, now) -> RuleContext:
     )
     unverified_incidents = list(
         IncidentReport.objects.filter(
-            area=area,
+            area=area.data_area,
             is_public=True,
             cleared_at__isnull=True,
             status__in=[IncidentStatus.SUBMITTED, IncidentStatus.UNDER_REVIEW],
@@ -204,7 +204,7 @@ def _build_context(area: Area, now) -> RuleContext:
         .order_by("-created_at")[:20]
     )
 
-    lst_qs = EnvironmentalObservation.objects.filter(cell__area=area, lst_c__isnull=False)
+    lst_qs = EnvironmentalObservation.objects.filter(cell__area=area.data_area, lst_c__isnull=False)
     latest_lst_date = lst_qs.order_by("-observed_on").values_list("observed_on", flat=True).first()
     lst_values = (
         list(lst_qs.filter(observed_on=latest_lst_date).values_list("lst_c", flat=True))
@@ -213,7 +213,7 @@ def _build_context(area: Area, now) -> RuleContext:
     )
 
     climate_metrics = list(
-        area.climate_metrics.filter(variable="temperature_2m_mean", period_type="annual")
+        area.data_area.climate_metrics.filter(variable="temperature_2m_mean", period_type="annual")
         .select_related("baseline", "source")
         .order_by("period_start")
     )
@@ -235,21 +235,6 @@ def _build_context(area: Area, now) -> RuleContext:
         climate_metrics=climate_metrics,
         sources=sources,
     )
-
-
-def _alert_covers_area(alert: OfficialAlert, area: Area) -> bool:
-    """Scope an alert to the area using published text, then geometry if present."""
-    text = (alert.areas_text or "").lower()
-    if area.name.lower() in text or area.slug.lower() in text:
-        return True
-    if scope_matches(alert.areas_text):
-        return True
-    if alert.geometry and area.boundary:
-        try:
-            return parse_geometry(alert.geometry).intersects(parse_geometry(area.boundary))
-        except ValueError:
-            return False
-    return False
 
 
 def _module_availability(source, *, data_present: bool, missing_reason: str, extra_reason: str | None = None) -> dict:
@@ -543,8 +528,7 @@ def _air_quality_rule(ctx: RuleContext) -> dict | None:
                     "station_name": station.name,
                     "distance_km": round(
                         haversine_m(
-                            ctx.area.centroid_lat,
-                            ctx.area.centroid_lon,
+                            *ctx.area.focus,
                             station.latitude,
                             station.longitude,
                         )
@@ -665,7 +649,7 @@ def _lst_rule(ctx: RuleContext) -> dict | None:
         severity = "caution"
     observation = (
         EnvironmentalObservation.objects.filter(
-            cell__area=ctx.area, observed_on=ctx.latest_lst_date, lst_c__isnull=False
+            cell__area=ctx.area.data_area, observed_on=ctx.latest_lst_date, lst_c__isnull=False
         )
         .select_related("scene", "scene__source")
         .order_by("-lst_c")

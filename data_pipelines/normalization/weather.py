@@ -73,6 +73,7 @@ def normalize_forecast(payload: dict, *, timezone: str = "Asia/Kolkata") -> dict
             "wind_direction_deg": _at(hourly_payload, "wind_direction_10m", index),
             "wind_gust_kmh": _at(hourly_payload, "wind_gusts_10m", index),
             "shortwave_radiation_wm2": _at(hourly_payload, "shortwave_radiation", index),
+            "uv_index": _at(hourly_payload, "uv_index", index),
             "raw": {"time": raw_time},
         }
         hourly.append(record)
@@ -97,6 +98,7 @@ def normalize_forecast(payload: dict, *, timezone: str = "Asia/Kolkata") -> dict
                 "wind_gust_kmh": _at(daily_payload, "wind_gusts_10m_max", index),
                 "wind_direction_deg": _at(daily_payload, "wind_direction_10m_dominant", index),
                 "shortwave_radiation_wm2": _at(daily_payload, "shortwave_radiation_sum", index),
+                "uv_index": _at(daily_payload, "uv_index_max", index),
                 "raw": {"date": raw_day},
             }
         )

@@ -1,3 +1,4 @@
+import { LocateFixed } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -78,10 +79,7 @@ export function NearMeButton({
         disabled={busy}
         className="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-3.5 py-2 text-xs font-semibold text-ink-800 shadow-sm transition hover:border-ink-300 disabled:cursor-wait disabled:opacity-70"
       >
-        <svg viewBox="0 0 24 24" className="h-4 w-4 text-ink-500" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-          <circle cx="12" cy="12" r="3.5" />
-          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-        </svg>
+        <LocateFixed className="h-4 w-4 text-brand" aria-hidden="true" />
         {busy ? t("Finding your location…") : t("Use my location")}
       </button>
       {busy && fix ? (

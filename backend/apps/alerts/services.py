@@ -7,11 +7,18 @@ from data_pipelines.providers.sachet import SACHETClient, normalize_alerts
 from django.conf import settings
 from django.utils import timezone
 
+from apps.core.geometry import parse_geometry
 from apps.core.models import DataSource, IngestionRun, IngestionRunStatus
+from apps.locations.models import Area
 
 from .models import AlertStatus, OfficialAlert
 
 logger = logging.getLogger("apps.alerts.ingestion")
+
+
+class AlertMatch:
+    NAMED = "named"
+    STATE = "state"
 
 
 class AlertIngestionError(Exception):
@@ -27,6 +34,23 @@ def scope_matches(areas_text: str, terms: list[str] | None = None) -> bool:
 def scope_text_matches(areas_text: str, terms: list[str]) -> bool:
     text = (areas_text or "").lower()
     return any(term.lower() in text for term in terms if term)
+
+
+def alert_match(alert: OfficialAlert, area: Area) -> str | None:
+    """How an alert relates to an area: named in it, state-wide, or not at all.
+
+    Alert text can be as vague as "9 districts of West Bengal". Dropping those could hide
+    a real warning, so they are kept as "state" matches that readers are told to check.
+    """
+    text = (alert.areas_text or "").lower()
+    terms = area.metadata.get("alert_terms") or [area.slug.replace("-", " "), area.name.lower()]
+    if any(term in text for term in terms):
+        return AlertMatch.NAMED
+    if alert.geometry and parse_geometry(alert.geometry).intersects(parse_geometry(area.boundary)):
+        return AlertMatch.NAMED
+    if any(term in text for term in settings.ALERT_STATE_TERMS):
+        return AlertMatch.STATE
+    return None
 
 
 def official_alert_source() -> DataSource | None:

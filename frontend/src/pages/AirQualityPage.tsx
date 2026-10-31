@@ -15,6 +15,7 @@ import { useAirMeasurements, useAirStations, useArea } from "../api/queries";
 import { BoundaryLayer, CivicMap, MapLegend } from "../components/map/CivicMap";
 import { DataStateNotice, StateBadge } from "../components/ui/DataState";
 import { ErrorState, LoadingPanel } from "../components/ui/Feedback";
+import { Explain } from "../components/ui/Explain";
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionHeading } from "../components/ui/SectionHeading";
 import { SourcePanel } from "../components/ui/SourcePanel";
@@ -65,9 +66,9 @@ export function AirQualityPage() {
   return (
     <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
-        eyebrow="Air quality · CPCB stations"
-        title="Station observations, not a city-wide surface"
-        description="Where station data exists, measurements stay attached to their station and timestamp. The platform does not interpolate a neighbourhood AQI map or fabricate readings when the CPCB feed is unavailable."
+        eyebrow="Air quality"
+        title="Air quality near you"
+        description="Readings from official monitoring stations. Each one is true for that station, so your street may differ. We never guess a reading."
         aside={stations.data ? <StateBadge state={stations.data.state} /> : null}
       />
 
@@ -255,6 +256,13 @@ export function AirQualityPage() {
           </p>
         </div>
       </section>
+
+      <Explain title="How to read air quality">
+        <p>
+          Lower AQI is better. Up to 100 is fine for most people; above 200, limit long outdoor effort.
+          Each number comes from one monitoring station, so your street may differ.
+        </p>
+      </Explain>
 
       <SourcePanel
         source={stations.data?.source}

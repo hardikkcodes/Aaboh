@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
 import { AuthProvider } from "./auth/AuthContext";
 import { LanguageProvider } from "./components/layout/LanguageProvider";
+import { PreferencesProvider } from "./components/layout/PreferencesProvider";
 import "./index.css";
 
 const queryClient = new QueryClient({
@@ -26,7 +27,7 @@ createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <LanguageProvider>
-          <App />
+          <PreferencesProvider>{(area) => <App key={area} />}</PreferencesProvider>
         </LanguageProvider>
       </AuthProvider>
     </QueryClientProvider>

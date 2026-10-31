@@ -41,8 +41,9 @@ def _source() -> DataSource:
 
 
 def _location(area: Area, source: DataSource) -> WeatherLocation:
-    latitude = round(area.centroid_lat, 4)
-    longitude = round(area.centroid_lon, 4)
+    focus_lat, focus_lon = area.focus
+    latitude = round(focus_lat, 4)
+    longitude = round(focus_lon, 4)
     key = f"{latitude:.4f},{longitude:.4f}"
     location, _ = WeatherLocation.objects.get_or_create(
         source=source,
@@ -196,7 +197,7 @@ def ingest_climate(
 
         temp_baseline = _upsert_baseline(
             source,
-            name=f"ERA5-Land {baseline_start}-{baseline_end} annual mean temperature",
+            name=f"{area.slug} ERA5-Land {baseline_start}-{baseline_end} annual mean temperature",
             variable="temperature_2m_mean_annual",
             start_year=baseline_start,
             end_year=baseline_end,
@@ -206,7 +207,7 @@ def ingest_climate(
         precip_stats = [s for s in baseline_stats if s["precipitation_total"] is not None]
         precip_baseline = _upsert_baseline(
             source,
-            name=f"ERA5-Land {baseline_start}-{baseline_end} annual precipitation",
+            name=f"{area.slug} ERA5-Land {baseline_start}-{baseline_end} annual precipitation",
             variable="precipitation_sum_annual",
             start_year=baseline_start,
             end_year=baseline_end,
@@ -217,7 +218,7 @@ def ingest_climate(
         hot_baseline = (
             _upsert_baseline(
                 source,
-                name=f"ERA5-Land {baseline_start}-{baseline_end} hot days (>=35°C)",
+                name=f"{area.slug} ERA5-Land {baseline_start}-{baseline_end} hot days (>=35°C)",
                 variable="hot_days_ge_35c_annual",
                 start_year=baseline_start,
                 end_year=baseline_end,
@@ -238,7 +239,7 @@ def ingest_climate(
             if values:
                 seasonal_baselines[season] = _upsert_baseline(
                     source,
-                    name=f"ERA5-Land {baseline_start}-{baseline_end} {season} mean temperature",
+                    name=f"{area.slug} ERA5-Land {baseline_start}-{baseline_end} {season} mean temperature",
                     variable="temperature_2m_mean_seasonal",
                     start_year=baseline_start,
                     end_year=baseline_end,

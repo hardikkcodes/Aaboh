@@ -12,11 +12,13 @@ class OfficialAlertSerializer(serializers.ModelSerializer):
     severity_label = serializers.CharField(source="get_severity_display", read_only=True)
     is_current = serializers.BooleanField(read_only=True)
     source = serializers.SerializerMethodField()
+    match = serializers.SerializerMethodField()
 
     class Meta:
         model = OfficialAlert
         fields = [
             "id",
+            "match",
             "external_id",
             "title",
             "description",
@@ -38,6 +40,9 @@ class OfficialAlertSerializer(serializers.ModelSerializer):
             "is_current",
             "source",
         ]
+
+    def get_match(self, obj) -> str | None:
+        return getattr(obj, "match", None)
 
     def get_source(self, obj) -> dict:
         return source_summary(obj.source)

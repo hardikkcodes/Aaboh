@@ -10,19 +10,21 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--area", default="kolkata")
         parser.add_argument("--forecast-days", type=int, default=7)
+        parser.add_argument("--all-areas", action="store_true")
 
     def handle(self, *args, **options):
-        try:
-            area = Area.objects.get(slug=options["area"], is_active=True)
-        except Area.DoesNotExist as exc:
-            raise CommandError(f"Unknown area: {options['area']}") from exc
-        try:
-            result = ingest_open_meteo(area, forecast_days=options["forecast_days"])
-        except WeatherIngestionError as exc:
-            raise CommandError(f"Open-Meteo ingestion failed: {exc}") from exc
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Open-Meteo: {result['written']} records written "
-                f"(current={result['current']}, hourly={result['hourly']}, daily={result['daily']})"
+        areas = Area.objects.filter(is_active=True)
+        areas = areas if options["all_areas"] else areas.filter(slug=options["area"])
+        if not areas:
+            raise CommandError(f"Unknown area: {options['area']}")
+        for area in areas:
+            try:
+                result = ingest_open_meteo(area, forecast_days=options["forecast_days"])
+            except WeatherIngestionError as exc:
+                raise CommandError(f"{area.slug}: Open-Meteo ingestion failed: {exc}") from exc
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"{area.slug}: {result['written']} records written "
+                    f"(current={result['current']}, hourly={result['hourly']}, daily={result['daily']})"
+                )
             )
-        )

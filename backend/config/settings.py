@@ -1,4 +1,4 @@
-"""Django settings for the Civic Climate Intelligence Platform.
+"""Django settings for the Aaboh Platform.
 
 Configuration is environment-driven. Development defaults are deliberately
 usable without Docker or external credentials; production must set explicit
@@ -161,6 +161,22 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("INCIDENT_IMAGE_MAX_BYTES", "5242880
 FILE_UPLOAD_MAX_MEMORY_SIZE = 2_621_440
 DATA_UPLOAD_MAX_NUMBER_FILES = 4
 
+# Account emails print to the console until a mail host is configured.
+EMAIL_HOST = os.getenv("EMAIL_HOST", "")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_TIMEOUT = 10
+EMAIL_BACKEND = (
+    "django.core.mail.backends.smtp.EmailBackend"
+    if EMAIL_HOST
+    else "django.core.mail.backends.console.EmailBackend"
+)
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@localhost")
+# Turn on once email delivery works, so new accounts must confirm before reporting.
+ACCOUNT_REQUIRE_VERIFIED_EMAIL = env_bool("ACCOUNT_REQUIRE_VERIFIED_EMAIL", False)
+
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = env_list(
@@ -208,7 +224,7 @@ if not DEBUG:
         SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Civic Climate Intelligence API",
+    "TITLE": "Aaboh API",
     "DESCRIPTION": (
         "Public environmental intelligence for Kolkata. Responses separate observation, "
         "forecast, prediction, official warning and community report; source and freshness "
@@ -236,8 +252,8 @@ SPECTACULAR_SETTINGS = {
 }
 
 APP_CONFIG = {
-    "name": os.getenv("APP_NAME", "Civic Climate"),
-    "short_name": os.getenv("APP_SHORT_NAME", "CivicClimate"),
+    "name": os.getenv("APP_NAME", "Aaboh"),
+    "short_name": os.getenv("APP_SHORT_NAME", "Aaboh"),
     "tagline": os.getenv("APP_TAGLINE", "Hyperlocal environmental intelligence for Kolkata"),
     "support_email": os.getenv("APP_SUPPORT_EMAIL", ""),
     "default_city": "Kolkata",
@@ -265,6 +281,7 @@ SACHET_TIMEOUT = int(os.getenv("SACHET_TIMEOUT_SECONDS", "45"))
 SACHET_SCOPE_TERMS = env_list(
     "SACHET_SCOPE_TERMS", "kolkata,howrah,haora,hooghly,24 parganas,west bengal"
 )
+ALERT_STATE_TERMS = env_list("ALERT_STATE_TERMS", "west bengal,gangetic bengal")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 GEE_PROJECT_ID = os.getenv("GEE_PROJECT_ID", "")
 GEE_SERVICE_ACCOUNT_EMAIL = os.getenv("GEE_SERVICE_ACCOUNT_EMAIL", "")

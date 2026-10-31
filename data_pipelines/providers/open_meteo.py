@@ -51,6 +51,7 @@ HOURLY_FIELDS = [
     "wind_direction_10m",
     "wind_gusts_10m",
     "shortwave_radiation",
+    "uv_index",
 ]
 DAILY_FIELDS = [
     "weather_code",
@@ -66,7 +67,9 @@ DAILY_FIELDS = [
     "wind_gusts_10m_max",
     "wind_direction_10m_dominant",
     "shortwave_radiation_sum",
+    "uv_index_max",
 ]
+COMPARISON_MODELS = ("ecmwf_ifs025", "gfs_seamless", "icon_seamless")
 ARCHIVE_DAILY_FIELDS = [
     "temperature_2m_mean",
     "temperature_2m_max",
@@ -92,7 +95,7 @@ def _request(url: str, params: dict[str, Any], timeout: float) -> dict:
             url,
             params=params,
             timeout=timeout,
-            headers={"User-Agent": "CivicClimateIntelligence/0.1 (environmental research; contact: local dev)"},
+            headers={"User-Agent": "AabohIntelligence/0.1 (environmental research; contact: local dev)"},
         )
     except requests.RequestException as exc:
         raise ProviderError(f"Open-Meteo request failed: {exc}") from exc
@@ -125,6 +128,26 @@ def fetch_forecast(
         "forecast_days": max(1, min(forecast_days, 16)),
         "wind_speed_unit": "kmh",
         "timeformat": "iso8601",
+    }
+    return _request(FORECAST_URL, params, timeout)
+
+
+def fetch_model_comparison(
+    latitude: float,
+    longitude: float,
+    *,
+    forecast_days: int = 7,
+    timezone: str = DEFAULT_TIMEZONE,
+    timeout: float = 30,
+) -> dict:
+    """The same days from three independent global models, to show how far they agree."""
+    params = {
+        "latitude": round(latitude, 4),
+        "longitude": round(longitude, 4),
+        "daily": "precipitation_sum,temperature_2m_max",
+        "models": ",".join(COMPARISON_MODELS),
+        "forecast_days": forecast_days,
+        "timezone": timezone,
     }
     return _request(FORECAST_URL, params, timeout)
 

@@ -1,3 +1,4 @@
+import { createElement } from "react";
 import { useState } from "react";
 import { CircleMarker, Popup } from "react-leaflet";
 import { Link } from "react-router-dom";
@@ -5,9 +6,10 @@ import { Link } from "react-router-dom";
 import { useArea, useLiveMap } from "../../api/queries";
 import type { LiveReportProperties } from "../../api/types";
 import { LIVE_REPORT_TYPES, TRUST_META } from "../../lib/constants";
+import { CATEGORY_ICONS } from "../../lib/topics";
 import { cn, formatRelative } from "../../lib/format";
 import { useT } from "../../lib/i18n";
-import { BoundaryLayer, CivicMap, MapLegend } from "../map/CivicMap";
+import { BoundaryLayer, CivicMap, FitToBoundary, MapLegend } from "../map/CivicMap";
 import { ErrorState } from "../ui/Feedback";
 import { ReportConfirmButtons } from "./ReportConfirmButtons";
 
@@ -33,7 +35,7 @@ function ReportPopup({ report }: { report: LiveReportProperties }) {
       <p className="font-semibold text-ink-900">{report.category_label}</p>
       {report.place ? <p className="text-xs text-ink-600">{report.place}</p> : null}
       {details ? <p className="mt-1 text-xs font-medium text-ink-800">{details}</p> : null}
-      {report.description ? <p className="mt-1 text-xs leading-5 text-ink-700">{report.description}</p> : null}
+      {report.description ? <p data-original-text className="mt-1 text-xs leading-5 text-ink-700">{report.description}</p> : null}
       <p className="mt-1.5 text-xs text-ink-500">
         Reported {formatRelative(report.occurred_at)}
         {report.still_there ? ` · ${report.still_there} still there` : ""}
@@ -67,12 +69,13 @@ export function LiveCityMap({ height = "420px" }: { height?: string }) {
             aria-pressed={category === item.value}
             onClick={() => setCategory(item.value)}
             className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-medium",
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium",
               category === item.value
                 ? "border-ink-900 bg-ink-900 text-white"
                 : "border-ink-200 bg-white text-ink-700 hover:border-ink-300",
             )}
           >
+            {CATEGORY_ICONS[item.value] ? createElement(CATEGORY_ICONS[item.value], { className: "h-3.5 w-3.5", "aria-hidden": true }) : null}
             {t(item.label)}
           </button>
         ))}
@@ -82,6 +85,7 @@ export function LiveCityMap({ height = "420px" }: { height?: string }) {
         <ErrorState error={live.error} onRetry={() => void live.refetch()} />
       ) : (
         <CivicMap height={height} zoom={12}>
+          <FitToBoundary geometry={area.data?.boundary} />
           <BoundaryLayer geometry={area.data?.boundary} />
           {features.map(({ geometry, properties }) => (
             <CircleMarker

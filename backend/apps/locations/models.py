@@ -6,12 +6,13 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.core.fields import GeometryField
-from apps.core.geometry import centroid_point, geodesic_area_km2, parse_geometry
+from apps.core.geometry import centroid_point, geodesic_area_km2, parse_geometry, point_geojson
 
 
 class AreaLevel(models.TextChoices):
     CITY = "city", "City / municipal corporation"
     DISTRICT = "district", "District"
+    ZONE = "zone", "City zone"
     WARD = "ward", "Ward"
     NEIGHBOURHOOD = "neighbourhood", "Neighbourhood"
 
@@ -43,6 +44,20 @@ class Area(models.Model):
     class Meta:
         ordering = ["name"]
         indexes = [models.Index(fields=["level", "is_active"], name="area_level_active_idx")]
+
+    @property
+    def data_area(self) -> Area:
+        """Zones share their parent's reports, grid and climate records."""
+        return self.parent if self.level == AreaLevel.ZONE and self.parent_id else self
+
+    @property
+    def focus(self) -> tuple[float, float]:
+        """Where people are. A district's centre can be far from them, even in open water."""
+        point = self.metadata.get("forecast_point")
+        return (point[0], point[1]) if point else (self.centroid_lat, self.centroid_lon)
+
+    def covers(self, latitude: float, longitude: float) -> bool:
+        return parse_geometry(self.boundary).covers(parse_geometry(point_geojson(latitude, longitude)))
 
     def clean(self):
         geom = parse_geometry(self.boundary)

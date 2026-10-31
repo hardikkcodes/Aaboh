@@ -42,6 +42,25 @@ class WeatherLocation(models.Model):
         return f"{self.name} ({self.source.slug})"
 
 
+class DailyModelForecast(models.Model):
+    """One forecast model's view of one day, used to show how far models agree."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    location = models.ForeignKey(WeatherLocation, on_delete=models.CASCADE, related_name="model_forecasts")
+    model = models.CharField(max_length=32)
+    valid_date = models.DateField()
+    rain_mm = models.FloatField(null=True, blank=True)
+    temperature_max_c = models.FloatField(null=True, blank=True)
+    retrieved_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["location", "model", "valid_date"], name="uniq_model_forecast_day"
+            )
+        ]
+
+
 class WeatherRecord(models.Model):
     """Normalised weather values for one location, kind and valid time."""
 
@@ -77,6 +96,7 @@ class WeatherRecord(models.Model):
         null=True, blank=True, validators=[MinValueValidator(0), MaxValueValidator(100)]
     )
     shortwave_radiation_wm2 = models.FloatField(null=True, blank=True, validators=[MinValueValidator(0)])
+    uv_index = models.FloatField(null=True, blank=True, validators=[MinValueValidator(0)])
     pressure_hpa = models.FloatField(null=True, blank=True)
     visibility_m = models.FloatField(null=True, blank=True, validators=[MinValueValidator(0)])
     weather_code = models.IntegerField(null=True, blank=True)

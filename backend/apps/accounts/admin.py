@@ -6,7 +6,7 @@ from .models import SavedLocation, User, UserPreference
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
-    fieldsets = DjangoUserAdmin.fieldsets + (("Civic Climate", {"fields": ("display_name", "role")}),)
+    fieldsets = DjangoUserAdmin.fieldsets + (("Aaboh", {"fields": ("display_name", "role")}),)
     list_display = ("username", "email", "display_name", "role", "is_staff")
     list_filter = ("role", "is_staff", "is_active")
     search_fields = ("username", "email", "display_name")

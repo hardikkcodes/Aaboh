@@ -10,7 +10,9 @@ import {
 } from "recharts";
 import { Link } from "react-router-dom";
 
-import { useWeatherCurrent, useWeatherForecast, useWeatherHistory } from "../api/queries";
+import { useWeatherCurrent, useWeatherForecast, useWeatherHistory, useWeekPlan } from "../api/queries";
+import { Explain } from "../components/ui/Explain";
+import { ForecastConfidence } from "../components/weather/ForecastConfidence";
 import type { WeatherRecord } from "../api/types";
 import { useTemperatureUnit } from "../auth/context";
 import { DataStateNotice, StateBadge } from "../components/ui/DataState";
@@ -65,6 +67,7 @@ export function WeatherPage() {
   const unit = useTemperatureUnit();
   const current = useWeatherCurrent();
   const forecast = useWeatherForecast();
+  const plan = useWeekPlan();
   const history = useWeatherHistory(undefined, 90);
 
   const record = current.data?.record;
@@ -75,9 +78,9 @@ export function WeatherPage() {
   return (
     <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
-        eyebrow="Weather · Kolkata"
-        title="Forecast, current conditions and recent history"
-        description="Provider forecast and reanalysis data, shown separately from official warnings and station observations. Times are IST."
+        eyebrow="Weather"
+        title="Weather today and this week"
+        description="Computer forecasts for your area, not official warnings. All times are in IST."
         aside={current.data ? <StateBadge state={current.data.state} /> : null}
       />
 
@@ -130,7 +133,6 @@ export function WeatherPage() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <Detail label="Forecast state" value={forecast.data ? forecast.data.state.replaceAll("_", " ") : "—"} hint="Provider forecast pipeline" />
             <Detail label="Next high" value={formatTemperature(daily[0]?.temperature_max_c, unit)} hint="Daily provider forecast" />
             <Detail label="Next low" value={formatTemperature(daily[0]?.temperature_min_c, unit)} hint="Daily provider forecast" />
             <Detail
@@ -149,7 +151,7 @@ export function WeatherPage() {
               hint="Forecasts are never treated as official warnings"
             />
             <Link to="/alerts" className="btn-secondary sm:col-span-2">
-              Check official IMD alerts
+              Check official alerts
             </Link>
           </div>
         </section>
@@ -280,6 +282,18 @@ export function WeatherPage() {
           </div>
         )}
       </section>
+
+      <ForecastConfidence days={plan.data?.days ?? []} />
+
+      <Explain title="Where does this forecast come from?">
+        <p>
+          It comes from global weather models through Open-Meteo, for one point near your area. It isn't from
+          IMD, which needs a key we don't have, so always follow IMD for official warnings.
+        </p>
+        <p>
+          A storm can drench one neighbourhood and miss the next, so check the live map too.
+        </p>
+      </Explain>
 
       <SourcePanel
         source={forecast.data?.source ?? current.data?.source ?? history.data?.source}

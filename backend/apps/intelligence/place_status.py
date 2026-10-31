@@ -19,12 +19,13 @@ from django.utils import timezone
 
 from apps.air_quality.models import AQIStation
 from apps.alerts.models import AlertStatus, OfficialAlert
-from apps.alerts.services import scope_matches
-from apps.core.geometry import bbox_around_point, haversine_m, parse_geometry
+from apps.alerts.services import AlertMatch, alert_match
+from apps.core.geometry import bbox_around_point, haversine_m
 from apps.core.models import DataSource
 from apps.core.quality import DataState, freshness_state, source_availability
 from apps.core.serializers import source_summary
 from apps.environment.models import EnvironmentalObservation
+from apps.environment.terrain import nearest_terrain
 from apps.incidents.models import IncidentCategory, IncidentReport, IncidentStatus
 from apps.incidents.serializers import IncidentListSerializer
 from apps.incidents.services import visible_incidents
@@ -162,7 +163,7 @@ def _air_level(aqi: int | None) -> str:
 def _center(area: Area, neighbourhood: Neighbourhood | None) -> tuple[float, float]:
     if neighbourhood is not None:
         return neighbourhood.latitude, neighbourhood.longitude
-    return area.centroid_lat, area.centroid_lon
+    return area.focus
 
 
 def _distance_km(center: tuple[float, float], latitude: float, longitude: float) -> float:
@@ -182,7 +183,7 @@ def _nearby_reports(
         center[0], center[1], radius_km * 1000
     )
     queryset = IncidentReport.objects.filter(
-        area=area,
+        area=area.data_area,
         occurred_at__gte=now - timedelta(hours=window_hours),
         cleared_at__isnull=True,
         latitude__gte=min_lat,
@@ -373,6 +374,24 @@ def _waterlogging_section(
             }
         )
 
+    terrain = nearest_terrain(area, *center) if resolution == "neighbourhood" else None
+    if terrain is not None:
+        contribution = 1 if terrain.terrain_class == "high" else 0
+        points += contribution
+        inputs.append(
+            {
+                "key": "terrain",
+                "label": "Low-lying ground",
+                "value": terrain.relative_elevation_m,
+                "unit": "m against nearby land",
+                "state": DataState.AVAILABLE,
+                "source": {"name": terrain.dem_source},
+                "observed_at": None,
+                "contribution": contribution,
+                "detail": "Satellite elevation for the nearest 1 km cell. It knows nothing about drains.",
+            }
+        )
+
     verified_points = min(len(verified), 2)
     points += verified_points
     inputs.append(
@@ -432,7 +451,7 @@ def _waterlogging_section(
 
     caveats = [
         "This is a rule-based risk indicator built from rainfall and nearby reports. It is not a trained ML model, not a probability, and not a flood forecast.",
-        "It does not know local drain capacity, elevation, tide, or drainage works, so a low signal does not mean a street is dry.",
+        "It does not know local drain capacity, tide, or drainage works, so a low signal does not mean a street is dry.",
         "Community reports describe individual locations and may be incomplete or mistaken.",
         "Official warnings are a separate layer; absence of a warning does not mean conditions are safe.",
     ]
@@ -447,7 +466,7 @@ def _waterlogging_section(
         "level": level,
         "label": RISK_LABELS[level],
         "points": points,
-        "max_points": 8,
+        "max_points": 9,
         "method": {
             "id": WATERLOGGING_METHOD,
             "version": PLACE_METHOD_VERSION,
@@ -455,7 +474,7 @@ def _waterlogging_section(
             "is_ml": False,
             "description": (
                 "Adds transparent points for forecast rain, recent daily rain and nearby "
-                "water reports. No trained waterlogging model exists; no accuracy is claimed."
+                "water reports. For neighbourhoods it also adds a point for low-lying ground. No trained waterlogging model exists yet; no accuracy is claimed."
             ),
         },
         "inputs": inputs,
@@ -504,7 +523,7 @@ def _heat_section(area: Area, center: tuple[float, float], now) -> dict:
     }
 
     observations = EnvironmentalObservation.objects.filter(
-        cell__area=area, lst_c__isnull=False
+        cell__area=area.data_area, lst_c__isnull=False
     ).select_related("cell", "scene")
     latest_date = observations.order_by("-observed_on").values_list(
         "observed_on", flat=True
@@ -652,20 +671,10 @@ def _air_quality_section(center: tuple[float, float], now) -> dict:
     return base
 
 
-def _alert_scope(alert: OfficialAlert, area: Area, neighbourhood: Neighbourhood | None) -> bool:
-    text = (alert.areas_text or "").lower()
-    if area.name.lower() in text or area.slug.lower() in text:
-        return True
-    if neighbourhood and neighbourhood.name.lower() in text:
-        return True
-    if scope_matches(alert.areas_text):
-        return True
-    if alert.geometry and area.boundary:
-        try:
-            return parse_geometry(alert.geometry).intersects(parse_geometry(area.boundary))
-        except ValueError:
-            return False
-    return False
+def _alert_scope(alert: OfficialAlert, area: Area, neighbourhood: Neighbourhood | None) -> str | None:
+    if neighbourhood and neighbourhood.name.lower() in (alert.areas_text or "").lower():
+        return AlertMatch.NAMED
+    return alert_match(alert, area)
 
 
 def _alerts_section(
@@ -678,16 +687,23 @@ def _alerts_section(
         .select_related("source")
         .order_by("-issued_at")
     )
-    scoped = [alert for alert in alerts if _alert_scope(alert, area, neighbourhood)]
+    scoped = []
+    for alert in alerts:
+        alert.match = _alert_scope(alert, area, neighbourhood)
+        if alert.match:
+            scoped.append(alert)
+    scoped.sort(key=lambda alert: alert.match != AlertMatch.NAMED)
+    named = sum(1 for alert in scoped if alert.match == AlertMatch.NAMED)
     feed_healthy = availability["state"] in {DataState.AVAILABLE, DataState.PARTIAL}
     if feed_healthy:
         state = availability["state"]
         reason = None
-        feed_message = (
-            f"{len(scoped)} active official warning(s) cover this area."
-            if scoped
-            else "The official alert feed is reachable. No active warning covers this area right now."
-        )
+        if named:
+            feed_message = f"{named} active official warning(s) name this area."
+        elif scoped:
+            feed_message = f"{len(scoped)} state-level warning(s) may include this area."
+        else:
+            feed_message = "The official alert feed is reachable. No active warning covers this area right now."
     elif scoped:
         state = DataState.STALE
         reason = (
@@ -702,9 +718,11 @@ def _alerts_section(
     return {
         "state": state,
         "count": len(scoped),
+        "named_count": named,
         "results": [
             {
                 "id": str(alert.id),
+                "match": alert.match,
                 "title": alert.title,
                 "hazard": alert.hazard,
                 "hazard_label": alert.get_hazard_display(),
@@ -784,9 +802,12 @@ def _status_summary(
     reasons: list[str] = []
     level = "typical"
 
-    if alerts["count"]:
+    if alerts["named_count"]:
         level = "attention"
-        reasons.append(f"{alerts['count']} active official warning(s) cover this area.")
+        reasons.append(f"{alerts['named_count']} active official warning(s) name this area.")
+    elif alerts["count"]:
+        level = "watch"
+        reasons.append(f"{alerts['count']} state-level warning(s) may include this area.")
     if waterlogging["level"] == "high":
         level = "attention"
         reasons.append("The waterlogging risk indicator is high.")
@@ -850,7 +871,7 @@ def _status_summary(
         "typical": "No strong local signal right now",
         "unknown": "Local conditions are unavailable",
     }[level]
-    if alerts["count"]:
+    if alerts["named_count"]:
         headline = "Official warning in effect"
     elif waterlogging["level"] == "high":
         headline = "Waterlogging risk is high"

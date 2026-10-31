@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { CircleUserRound } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, createElement } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { fieldErrors, normalizeError } from "../api/client";
@@ -7,7 +8,8 @@ import { useAuth } from "../auth/context";
 import { ReportConfirmButtons } from "../components/live/ReportConfirmButtons";
 import { LocationPicker } from "../components/map/CivicMap";
 import { InlineSpinner, LoadingPanel } from "../components/ui/Feedback";
-import { AREA_SLUG, LIVE_REPORT_TYPES, PASSABILITY_OPTIONS, WATER_DEPTHS } from "../lib/constants";
+import { LIVE_REPORT_TYPES, PASSABILITY_OPTIONS, WATER_DEPTHS } from "../lib/constants";
+import { CATEGORY_ICONS } from "../lib/topics";
 import { cn, formatRelative } from "../lib/format";
 import { useT } from "../lib/i18n";
 import { distanceMeters } from "../lib/place";
@@ -47,7 +49,7 @@ function ChoiceGroup({
                 : "border-ink-200 bg-white text-ink-800",
             )}
           >
-            {t(option.label)}
+            {CATEGORY_ICONS[option.value] ? createElement(CATEGORY_ICONS[option.value], { className: "mr-1.5 inline h-4 w-4 align-[-3px]", "aria-hidden": true }) : null}{t(option.label)}
           </button>
         ))}
       </div>
@@ -109,6 +111,7 @@ export function QuickReportPage() {
     return (
       <div className="shell max-w-xl py-12">
         <div className="panel p-6 text-center">
+          <span className="icon-tile mx-auto mb-3"><CircleUserRound className="h-5 w-5" aria-hidden="true" /></span>
           <h1 className="display-title">Log in to report</h1>
           <p className="prose-civic mt-2">
             A free account helps keep the map reliable. Your name and email are never shown on reports.
@@ -142,7 +145,6 @@ export function QuickReportPage() {
       return;
     }
     const payload = new FormData();
-    payload.append("area", AREA_SLUG);
     payload.append("category", category);
     payload.append("occurred_at", new Date().toISOString());
     payload.append("latitude", String(point.latitude));

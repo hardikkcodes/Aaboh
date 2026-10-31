@@ -68,6 +68,15 @@ def test_landsat_ingestion_preserves_scene_provenance(grid, tmp_path):
     assert observation.processing_version == "landsat-c2l2-v1"
 
 
+def test_impossible_satellite_readings_are_rejected():
+    from apps.environment.services import _plausible
+
+    good = {"lst_c": 40.0, "ndvi": 0.3, "ndbi": -0.1, "mndwi": None}
+    assert _plausible(good)
+    assert not _plausible({**good, "lst_c": -123.1})
+    assert not _plausible({**good, "ndvi": 2.1})
+
+
 def test_landsat_ingestion_marks_unknown_acquisition_time(grid, tmp_path):
     from apps.environment.services import ingest_landsat_observations
 

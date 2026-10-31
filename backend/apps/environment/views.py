@@ -9,9 +9,9 @@ from apps.core.models import DataSource
 from apps.core.quality import source_availability
 from apps.core.schemas import DocumentedAPIView
 from apps.core.serializers import source_summary
-from apps.locations.models import GridCell
+from apps.locations.models import Area, GridCell
 
-from .models import EnvironmentalObservation
+from .models import CellTerrain, EnvironmentalObservation
 from .serializers import EnvironmentalObservationSerializer
 
 LAYER_DEFINITIONS = {
@@ -153,6 +153,41 @@ class EnvironmentObservationsView(DocumentedAPIView):
                     "Cell values are aggregations of satellite pixels; they do not imply 1 km native "
                     "measurement resolution."
                 ),
+            }
+        )
+
+
+class EnvironmentTerrainView(DocumentedAPIView):
+    """Low-lying ground by grid cell. Shows where water could gather, not where it will."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        area = Area.objects.filter(slug=request.query_params.get("area", "kolkata"), is_active=True).first()
+        terrain = (
+            CellTerrain.objects.filter(cell__area=area.data_area).select_related("cell") if area else []
+        )
+        features = [
+            {
+                "type": "Feature",
+                "geometry": item.cell.geometry,
+                "properties": {
+                    "cell_code": item.cell.code,
+                    "susceptibility": item.susceptibility,
+                    "terrain_class": item.terrain_class,
+                    "elevation_m": item.elevation_m,
+                    "relative_elevation_m": item.relative_elevation_m,
+                },
+            }
+            for item in terrain
+        ]
+        return Response(
+            {
+                "type": "FeatureCollection",
+                "state": "AVAILABLE" if features else "UNAVAILABLE",
+                "count": len(features),
+                "features": features,
+                "source": terrain[0].dem_source if features else None,
             }
         )
 

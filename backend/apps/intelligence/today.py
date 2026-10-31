@@ -20,6 +20,7 @@ from apps.core.quality import DataState, freshness_state
 from apps.incidents.services import live_reports
 from apps.locations.models import Area, Neighbourhood
 from apps.weather.conditions import condition_for_code
+from apps.weather.models import DailyModelForecast
 from apps.weather.selectors import hourly_records, latest_retrieved_at
 
 from .place_status import _air_quality_section, _alerts_section, _center
@@ -39,6 +40,9 @@ WARM_NIGHT_C = 28.0
 HEAT_INDEX_CAUTION_C = 32.0
 HEAT_INDEX_DANGER_C = 41.0
 NEARBY_REPORT_KM = 2.0
+HIGH_UV = 8
+WET_DAY_MM = 2.5
+MIN_MODELS_TO_COMPARE = 2
 SEASONS = {
     "air": {11, 12, 1, 2},
     "heat": {3, 4, 5},
@@ -143,6 +147,30 @@ def best_outdoor_window(hours: list) -> dict | None:
     }
 
 
+def model_agreement(area: Area, day) -> dict | None:
+    """Compare three independent models. Disagreement is reported, never averaged away."""
+    forecasts = DailyModelForecast.objects.filter(
+        location__area=area, location__source__slug="open_meteo", valid_date=day, rain_mm__isnull=False
+    )
+    rain = [forecast.rain_mm for forecast in forecasts]
+    if len(rain) < MIN_MODELS_TO_COMPARE:
+        return None
+    wet = sum(1 for value in rain if value >= WET_DAY_MM)
+    if wet in {0, len(rain)}:
+        level = "high"
+    elif wet == 1 and max(rain) < HEAVY_RAIN_SOON_MM:
+        level = "medium"
+    else:
+        level = "low"
+    return {
+        "level": level,
+        "models_wet": wet,
+        "models": len(rain),
+        "rain_low_mm": round(min(rain), 1),
+        "rain_high_mm": round(max(rain), 1),
+    }
+
+
 def cleanest_air_window(area: Area, now) -> dict | None:
     """The two daytime hours with the lowest forecast PM2.5 in the next 24 hours."""
     hours = [
@@ -176,6 +204,7 @@ def build_timeline(hours: list) -> list[dict]:
             "heat_index_c": _hour_index(record),
             "rain_mm": record.precipitation_mm,
             "rain_probability_pct": record.precipitation_probability,
+            "uv_index": record.uv_index,
             "condition": condition_for_code(record.weather_code),
         }
         for record in hours[:12]
@@ -191,7 +220,7 @@ def _night_low(hours: list) -> float | None:
     return min(values) if values else None
 
 
-def _tips(rain: dict, peak_index, night_low, air: dict, alerts: dict, reports: int, now) -> list[dict]:
+def _tips(rain: dict, peak_index, night_low, uv_peak, air: dict, alerts: dict, reports: int, now) -> list[dict]:
     tips: list[dict] = []
     if alerts["count"]:
         tips.append(
@@ -261,6 +290,15 @@ def _tips(rain: dict, peak_index, night_low, air: dict, alerts: dict, reports: i
                 ),
             }
         )
+    if uv_peak is not None and uv_peak >= HIGH_UV:
+        tips.append(
+            {
+                "key": "high_uv",
+                "level": "caution",
+                "params": {"uv": round(uv_peak)},
+                "text": f"UV index reaches {round(uv_peak)}. Shade, a hat and sunscreen help around midday.",
+            }
+        )
     return tips
 
 
@@ -275,6 +313,8 @@ def build_today(area: Area, *, neighbourhood: Neighbourhood | None = None, now=N
     indices = [index for index in (_hour_index(record) for record in hours) if index is not None]
     peak_index = max(indices) if indices else None
     night_low = _night_low(hours)
+    uv_values = [record.uv_index for record in hours if record.uv_index is not None]
+    uv_peak = max(uv_values) if uv_values else None
     air = _air_quality_section(centre, now)
     alerts = _alerts_section(area, neighbourhood, now)
 
@@ -284,7 +324,7 @@ def build_today(area: Area, *, neighbourhood: Neighbourhood | None = None, now=N
         for report in live
         if haversine_m(centre[0], centre[1], report.latitude, report.longitude) <= NEARBY_REPORT_KM * 1000
     ]
-    label = neighbourhood.name if neighbourhood else area.name
+    label = neighbourhood.name if neighbourhood else area.name.removesuffix(" Municipal Corporation")
 
     return {
         "generated_at": now,
@@ -301,15 +341,17 @@ def build_today(area: Area, *, neighbourhood: Neighbourhood | None = None, now=N
             "peak_heat_index_c": peak_index,
             "level": heat_level(peak_index),
             "night_low_c": night_low,
+            "uv_peak": uv_peak,
             "note": "Calculated from forecast temperature and humidity. Guidance, not a measurement.",
         },
         "best_outdoor_window": best_outdoor_window(hours),
         "cleanest_air_window": cleanest_air_window(area, now),
+        "tomorrow_agreement": model_agreement(area, now.astimezone(IST).date() + timedelta(days=1)),
         "timeline": build_timeline(hours),
         "air": {"state": air["state"], "level": air["level"], "aqi": (air["measurement"] or {}).get("aqi")},
         "alerts": {"state": alerts["state"], "count": alerts["count"], "feed_message": alerts["feed_message"]},
         "reports": {"nearby": len(nearby), "city": len(live), "radius_km": NEARBY_REPORT_KM},
-        "tips": _tips(rain, peak_index, night_low, air, alerts, len(nearby), now),
+        "tips": _tips(rain, peak_index, night_low, uv_peak, air, alerts, len(nearby), now),
         "note": "Forecast-based guidance for planning. It is not a guarantee that any place is safe.",
     }
 
@@ -345,6 +387,7 @@ def build_week_plan(area: Area, *, now=None) -> dict:
                 "peak_heat_index_c": peak_index,
                 "condition": condition_for_code(midday.weather_code),
                 "best_window": window,
+                "agreement": model_agreement(area, day),
                 "hours_covered": len(records),
             }
         )

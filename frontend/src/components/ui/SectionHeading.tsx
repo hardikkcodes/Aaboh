@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { cn } from "../../lib/format";
+import { TopicIcon } from "./Icon";
 
 interface SectionHeadingProps {
   eyebrow?: string;
@@ -15,7 +16,7 @@ export function SectionHeading({ eyebrow, title, description, action, className 
     <div className={cn("flex flex-wrap items-end justify-between gap-4", className)}>
       <div>
         {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-        <h2 className="section-title mt-1">{title}</h2>
+        <h2 className="section-title mt-1 flex items-center gap-2"><TopicIcon text={`${title} ${eyebrow ?? ""}`} className="h-5 w-5" />{title}</h2>
         {description ? <p className="prose-civic mt-2 max-w-2xl">{description}</p> : null}
       </div>
       {action}

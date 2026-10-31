@@ -1,11 +1,17 @@
 from __future__ import annotations
 
 import pytest
+from django.core.cache import cache
 from django.urls import reverse
 
 from apps.accounts.models import SavedLocation
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def clear_throttles():
+    cache.clear()
 
 
 def test_register_creates_account_and_token(api_client):
@@ -78,6 +84,75 @@ def test_token_authentication_reaches_me_endpoint(api_client, user):
     assert response.status_code == 200
     assert response.data["email"] == user.email
     assert "preferences" in response.data
+
+
+def test_password_reset_changes_password_and_ends_sessions(api_client, user):
+    from urllib.parse import parse_qs, urlparse
+
+    from django.core import mail
+
+    reply = api_client.post("/api/v1/auth/password-reset/", {"email": user.email}, format="json")
+    assert reply.status_code == 204
+    link = next(word for word in mail.outbox[-1].body.split() if "reset-password" in word)
+    query = parse_qs(urlparse(link).query)
+    reply = api_client.post(
+        "/api/v1/auth/password-reset/confirm/",
+        {"uid": query["uid"][0], "token": query["token"][0], "new_password": "a-Fresh-passphrase-9"},
+        format="json",
+    )
+    assert reply.status_code == 204
+    user.refresh_from_db()
+    assert user.check_password("a-Fresh-passphrase-9")
+
+
+def test_password_reset_does_not_reveal_accounts(api_client):
+    from django.core import mail
+
+    reply = api_client.post("/api/v1/auth/password-reset/", {"email": "nobody@example.com"}, format="json")
+    assert reply.status_code == 204
+    assert not mail.outbox
+
+
+def test_bad_reset_link_is_refused(api_client):
+    reply = api_client.post(
+        "/api/v1/auth/password-reset/confirm/",
+        {"uid": "bad", "token": "bad", "new_password": "a-Fresh-passphrase-9"},
+        format="json",
+    )
+    assert reply.status_code == 400
+
+
+def test_signup_sends_a_confirmation_that_verifies_the_email(api_client):
+    from urllib.parse import parse_qs, urlparse
+
+    from django.core import mail
+
+    reply = api_client.post(
+        "/api/v1/auth/register/",
+        {"email": "new@example.com", "password": "a-Fresh-passphrase-9", "display_name": "New"},
+        format="json",
+    )
+    assert reply.json()["user"]["email_verified"] is False
+    link = next(word for word in mail.outbox[-1].body.split() if "verify-email" in word)
+    token = parse_qs(urlparse(link).query)["token"][0]
+    assert api_client.post("/api/v1/auth/verify-email/", {"token": token}, format="json").status_code == 204
+    assert api_client.post("/api/v1/auth/verify-email/", {"token": "nope"}, format="json").status_code == 400
+
+
+def test_change_password_needs_the_current_one(auth_client):
+    wrong = auth_client.post(
+        "/api/v1/auth/change-password/",
+        {"current_password": "wrong", "new_password": "a-Fresh-passphrase-9"},
+        format="json",
+    )
+    assert wrong.status_code == 400
+
+
+def test_delete_account_needs_the_password(auth_client, user):
+    from apps.accounts.models import User
+
+    assert auth_client.delete("/api/v1/users/me/", {"password": "wrong"}, format="json").status_code == 400
+    assert User.objects.filter(pk=user.pk).exists()
 
 
 def test_me_requires_authentication(api_client):

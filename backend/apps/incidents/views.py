@@ -16,7 +16,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticate
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 
-from apps.accounts.permissions import IsModerator
+from apps.accounts.permissions import IsModerator, VerifiedEmailToWrite
 from apps.core.schemas import DocumentedAPIView
 from apps.locations.models import Area
 
@@ -90,7 +90,7 @@ def _live_feature(report: IncidentReport) -> dict:
 
 
 class IncidentListCreateView(ListCreateAPIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly, VerifiedEmailToWrite]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_throttles(self):
@@ -315,7 +315,7 @@ class IncidentExportView(DocumentedAPIView):
             .order_by("-occurred_at")[:EXPORT_LIMIT]
         )
         response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="climatesense-reports.csv"'
+        response["Content-Disposition"] = 'attachment; filename="aaboh-reports.csv"'
         writer = csv.writer(response)
         writer.writerow(
             ["occurred_hour", "category", "water_depth", "passability", "trust", "neighbourhood", "latitude", "longitude"]

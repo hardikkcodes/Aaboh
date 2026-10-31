@@ -1,5 +1,5 @@
 // Keeps the app usable on weak networks. Signed-in API data is never cached.
-const CACHE = "climatesense-v1";
+const CACHE = "aaboh-v2";
 const SHELL = ["/", "/manifest.webmanifest", "/icon-192.png"];
 const PUBLIC_DATA = ["/api/v1/today/", "/api/v1/incidents/live/", "/api/v1/alerts/"];
 

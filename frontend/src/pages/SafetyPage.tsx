@@ -1,7 +1,9 @@
+import { Phone, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useAlerts } from "../api/queries";
+import { TopicIcon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
 import { cn, formatDateTime } from "../lib/format";
 import { useT } from "../lib/i18n";
@@ -101,10 +103,11 @@ export function SafetyPage() {
       ) : null}
 
       <section>
-        <h2 className="section-title">{t("Emergency numbers")}</h2>
+        <h2 className="section-title flex items-center gap-2"><Phone className="h-5 w-5 text-brand" aria-hidden="true" />{t("Emergency numbers")}</h2>
         <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {HELPLINES.map((line) => (
             <a key={line.number} href={`tel:${line.number}`} className="panel p-4 text-center hover:border-ink-300">
+              <Phone className="mx-auto mb-1 h-4 w-4 text-brand" aria-hidden="true" />
               <p className="font-display text-3xl text-ink-950">{line.number}</p>
               <p className="text-xs text-ink-600">{line.label}</p>
             </a>
@@ -113,7 +116,7 @@ export function SafetyPage() {
       </section>
 
       <section>
-        <h2 className="section-title">Prepare and respond</h2>
+        <h2 className="section-title flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-brand" aria-hidden="true" />Prepare and respond</h2>
         <div className="mt-3 space-y-2">
           {CHECKLISTS.map((list) => (
             <div key={list.id} className="panel overflow-hidden">
@@ -123,7 +126,7 @@ export function SafetyPage() {
                 onClick={() => setOpen(open === list.id ? "" : list.id)}
                 className={cn("flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-ink-900")}
               >
-                {list.title}
+                <span className="flex items-center gap-2"><TopicIcon text={list.title} />{list.title}</span>
                 <span aria-hidden="true">{open === list.id ? "−" : "+"}</span>
               </button>
               {open === list.id ? (

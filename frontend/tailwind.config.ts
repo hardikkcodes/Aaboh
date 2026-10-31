@@ -1,22 +1,23 @@
 import type { Config } from "tailwindcss";
 
 export default {
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
         ink: {
-          50: "#f4f7f6",
-          100: "#e3ebe8",
-          200: "#c8d8d3",
-          300: "#9fbdb4",
-          400: "#6f9a8f",
-          500: "#4f7d71",
-          600: "#3c645a",
-          700: "#325149",
-          800: "#2a423d",
-          900: "#243733",
-          950: "#111f1c",
+          50: "rgb(var(--ink-50) / <alpha-value>)",
+          100: "rgb(var(--ink-100) / <alpha-value>)",
+          200: "rgb(var(--ink-200) / <alpha-value>)",
+          300: "rgb(var(--ink-300) / <alpha-value>)",
+          400: "rgb(var(--ink-400) / <alpha-value>)",
+          500: "rgb(var(--ink-500) / <alpha-value>)",
+          600: "rgb(var(--ink-600) / <alpha-value>)",
+          700: "rgb(var(--ink-700) / <alpha-value>)",
+          800: "rgb(var(--ink-800) / <alpha-value>)",
+          900: "rgb(var(--ink-900) / <alpha-value>)",
+          950: "rgb(var(--ink-950) / <alpha-value>)",
         },
         ember: {
           50: "#fdf7ed",
@@ -30,7 +31,7 @@ export default {
           800: "#7c3a19",
           900: "#663117",
         },
-        mist: "#f7faf9",
+        mist: "rgb(var(--mist) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["Inter", "Segoe UI", "system-ui", "sans-serif"],

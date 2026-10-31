@@ -1,8 +1,5 @@
 import type { DataState, ReportTrust } from "../api/types";
 
-export const AREA_SLUG = "kolkata";
-export const AREA_NAME = "Kolkata";
-
 export const INCIDENT_CATEGORIES = [
   { value: "waterlogging", label: "Waterlogging" },
   { value: "flooding", label: "Local flooding" },

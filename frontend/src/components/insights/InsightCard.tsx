@@ -1,9 +1,12 @@
 import type { Insight } from "../../api/types";
+import { TopicIcon } from "../ui/Icon";
 import { SEVERITY_META } from "../../lib/constants";
+import { INSIGHT_EXPLAINERS } from "../../lib/explainers";
 import { formatDateTime, titleCase } from "../../lib/format";
 
 export function InsightCard({ insight, compact = false }: { insight: Insight; compact?: boolean }) {
   const severity = SEVERITY_META[insight.severity] ?? SEVERITY_META.info;
+  const explainer = INSIGHT_EXPLAINERS[insight.rule_id];
   return (
     <article className="panel flex h-full flex-col p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-2">
@@ -19,8 +22,15 @@ export function InsightCard({ insight, compact = false }: { insight: Insight; co
         ) : null}
       </div>
 
-      <h3 className="mt-3 font-display text-xl leading-snug text-ink-950">{insight.title}</h3>
+      <h3 className="mt-3 flex items-start gap-2 font-display text-xl leading-snug text-ink-950"><TopicIcon text={insight.title} className="mt-1" />{insight.title}</h3>
       <p className="prose-civic mt-2">{insight.body}</p>
+
+      {explainer ? (
+        <div className="mt-3 rounded-xl bg-ink-50 p-3 text-sm leading-6 text-ink-800">
+          <p><strong className="font-semibold">In plain words:</strong> {explainer.means}</p>
+          <p className="mt-1"><strong className="font-semibold">What to do:</strong> {explainer.action}</p>
+        </div>
+      ) : null}
 
       {insight.valid_from || insight.valid_until ? (
         <p className="mt-3 text-xs text-ink-500">

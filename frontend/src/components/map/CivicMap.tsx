@@ -70,7 +70,7 @@ function ClickHandler({ onPick }: { onPick: (latitude: number, longitude: number
   return null;
 }
 
-function FitToBoundary({ geometry }: { geometry: GeoJSONGeometry | null | undefined }) {
+export function FitToBoundary({ geometry }: { geometry: GeoJSONGeometry | null | undefined }) {
   const map = useMap();
   useEffect(() => {
     const rings = geometryToRings(geometry);

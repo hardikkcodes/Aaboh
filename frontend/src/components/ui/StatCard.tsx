@@ -1,3 +1,5 @@
+import { TopicIcon } from "./Icon";
+
 interface StatCardProps {
   label: string;
   value: string;
@@ -15,7 +17,7 @@ const tones = {
 export function StatCard({ label, value, detail, tone = "default" }: StatCardProps) {
   return (
     <div className={`rounded-xl border p-4 ${tones[tone]}`}>
-      <p className="text-xs font-medium text-ink-600">{label}</p>
+      <p className="flex items-center gap-1.5 text-xs font-medium text-ink-600"><TopicIcon text={label} />{label}</p>
       <p className="mt-1 text-2xl font-semibold leading-tight text-ink-950">{value}</p>
       {detail ? <p className="mt-1 text-xs leading-5 text-ink-600">{detail}</p> : null}
     </div>

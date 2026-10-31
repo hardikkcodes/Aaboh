@@ -1,4 +1,4 @@
-# Civic Climate Intelligence Platform
+# Aaboh Platform
 
 Hyperlocal environmental intelligence for Kolkata, built as a production-minded
 modular monolith. The platform separates **observations**, **forecasts**,
@@ -17,14 +17,18 @@ PostGIS is included, but native GeoDjango storage is not active yet (see
 
 | Capability | Status | What is actually true today |
 | --- | --- | --- |
+| Accounts | **Working** | Sign up, login, password reset, email confirmation, password change, account deletion. Set `EMAIL_HOST` to send real email |
+| Waterlogging terrain | **Working for Kolkata** | Copernicus elevation per cell on the Rainfall page. Training is ready but waits for 300 real reports |
+| Bangla | **Working** | Translates the page and server text. Reports and official alert wording stay as written |
+| Regional coverage | **Working** | North and South Kolkata (split at latitude 22.55, approximate), North and South 24 Parganas |
 | Kolkata geography | **Working** | OSM relation 9381363 boundary, 124 OSM locality points, 250-cell deterministic 1 km grid in EPSG:32645 |
 | Weather forecast/current | **Working** | Live Open-Meteo ingestion; explicitly model output, not station observations |
 | Weather history / rainfall | **Working** | ERA5-Land daily archive via Open-Meteo, ~9 km reanalysis |
 | Climate metrics/trends | **Working** | Live ERA5-Land annual/seasonal metrics with 1991–2020 baseline |
-| Official alerts | **Blocked on credential** | IMD adapter implemented; no `IMD_API_KEY`, so the feed reports `UNAVAILABLE` |
+| Official alerts | **Working** | SACHET feed, matched by named place or by state (`ALERT_STATE_TERMS`). The IMD adapter is unused without `IMD_API_KEY` |
 | Air quality | **Blocked on credential** | CPCB/data.gov.in adapter implemented; no `CPCB_API_KEY`, so no stations or AQI are shown |
-| Satellite heat/environment | **Blocked on credential** | Landsat/GEE export and ingestion implemented; no Earth Engine credentials or grid asset, so layers report `UNAVAILABLE` |
-| Heat ML predictions | **No model exists** | Training/evaluation/registration/ingestion pipeline implemented and tested with synthetic fixtures only; no metrics are displayed |
+| Satellite heat/environment | **Working for Kolkata** | Landsat from Microsoft Planetary Computer, no account needed. Run `ml/src/heat/pc_landsat_export.py`, then ingest. The data file is not in git |
+| Heat ML predictions | **Tested, not in use** | Surface-heat model: 1.54 °C error against 3.08 °C for a cell-and-month average. It needs same-day satellite inputs, so no predictions are served |
 | Community reports | **Working** | Authenticated submissions, image sanitisation, duplicate hints, moderator workflow, audit history |
 | Area-first place status | **Working** | `/place/<area>` and neighbourhood pages aggregate weather, rain, a rule-based waterlogging signal, heat, air quality, alerts, and nearby reports with explicit states |
 | Insights | **Working** | Deterministic rules over stored evidence, with explicit data-availability caveats |

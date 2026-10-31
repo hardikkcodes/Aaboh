@@ -41,7 +41,7 @@ class AirQualityStationsView(DocumentedAPIView):
             area_slug = request.query_params.get("area", "kolkata")
             area = Area.objects.filter(slug=area_slug).first()
             if area:
-                latitude, longitude = str(area.centroid_lat), str(area.centroid_lon)
+                latitude, longitude = (str(value) for value in area.focus)
         if latitude is not None and longitude is not None:
             try:
                 lat_f, lon_f = float(latitude), float(longitude)

@@ -2,7 +2,7 @@
 
 ## 1. Shape of the system
 
-Civic Climate is a **modular monolith**: one Django project, one database, one
+Aaboh is a **modular monolith**: one Django project, one database, one
 React single-page application. Modules have explicit boundaries (Django apps and
 frontend feature folders) but run in the same process. There are no
 microservices, message brokers, Kubernetes manifests, or cross-service network

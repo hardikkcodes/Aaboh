@@ -274,7 +274,8 @@ describe("place status", () => {
     expect(screen.getByText("Worth checking before you travel")).toBeInTheDocument();
     expect(screen.getAllByText("Elevated waterlogging signal").length).toBeGreaterThan(0);
     expect(screen.getByText(/not a trained ML model/)).toBeInTheDocument();
-    expect(screen.getAllByText(/CPCB_API_KEY is not configured/).length).toBeGreaterThan(0);
+    // Missing data is left out instead of being shown as an unavailable box.
+    expect(screen.queryByText(/CPCB_API_KEY is not configured/)).not.toBeInTheDocument();
     expect(screen.getAllByText("Community reports").length).toBeGreaterThan(0);
   });
 });

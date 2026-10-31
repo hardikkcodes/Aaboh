@@ -12,6 +12,7 @@ from pathlib import Path
 
 import joblib
 import numpy as np
+import pandas as pd
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 from .config import (
@@ -66,6 +67,17 @@ def train_model(prepared: PreparedDataset, config: TrainingConfig) -> TrainedMod
 
     predictions = estimator.predict(prepared.test[features])
     actual = prepared.test[TARGET_COLUMN].to_numpy()
+    # Baseline: each cell's past average for that month. A useful model has to beat
+    # simply knowing the place and the season.
+    history = prepared.train.assign(month=prepared.train["observed_on"].dt.month)
+    usual = history.groupby(["cell_code", "month"])[TARGET_COLUMN].mean()
+    monthly = history.groupby("month")[TARGET_COLUMN].mean()
+    lookup = pd.MultiIndex.from_arrays([prepared.test["cell_code"], prepared.test["observed_on"].dt.month])
+    baseline = (
+        pd.Series(usual.reindex(lookup).to_numpy(), index=prepared.test.index)
+        .fillna(prepared.test["observed_on"].dt.month.map(monthly))
+        .fillna(prepared.train[TARGET_COLUMN].mean())
+    )
     metrics = {
         "target": TARGET_COLUMN,
         "unit": "degrees_celsius",
@@ -79,6 +91,7 @@ def train_model(prepared: PreparedDataset, config: TrainingConfig) -> TrainedMod
         "rmse_c": round(float(np.sqrt(mean_squared_error(actual, predictions))), 4),
         "r2": round(float(r2_score(actual, predictions)), 4),
         "mean_error_c": round(float(np.mean(predictions - actual)), 4),
+        "baseline_cell_month_mae_c": round(float(mean_absolute_error(actual, baseline)), 4),
         "note": (
             "Metrics describe the held-out chronological period only. They are not an "
             "official accuracy claim and do not imply air-temperature accuracy."

@@ -2,6 +2,7 @@ import { useWeekPlan } from "../api/queries";
 import type { WeekPlanDay } from "../api/types";
 import { useTemperatureUnit } from "../auth/context";
 import { StateBadge } from "../components/ui/DataState";
+import { AgreementChip } from "../components/weather/ForecastConfidence";
 import { ErrorState, EmptyState, LoadingPanel } from "../components/ui/Feedback";
 import { PageHeader } from "../components/ui/PageHeader";
 import { ShareButton } from "../components/ui/ShareButton";
@@ -22,7 +23,10 @@ function DayCard({ day }: { day: WeekPlanDay }) {
     <article className="panel p-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-display text-lg text-ink-950">{formatDay(day.date)}</h2>
-        <span className={cn("chip", rating.classes)}>{t(rating.label)}</span>
+        <span className="flex flex-wrap justify-end gap-1">
+          <AgreementChip agreement={day.agreement} />
+          <span className={cn("chip", rating.classes)}>{t(rating.label)}</span>
+        </span>
       </div>
       <p className="mt-1 text-sm text-ink-700">{day.condition.label}</p>
       <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-ink-600">

@@ -9,14 +9,16 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--area", default="kolkata")
+        parser.add_argument("--all-areas", action="store_true")
 
     def handle(self, *args, **options):
-        try:
-            area = Area.objects.get(slug=options["area"], is_active=True)
-        except Area.DoesNotExist as exc:
-            raise CommandError(f"Unknown area: {options['area']}") from exc
-        try:
-            result = ingest_air_forecast(area)
-        except AirQualityIngestionError as exc:
-            raise CommandError(str(exc)) from exc
-        self.stdout.write(self.style.SUCCESS(f"Air forecast: {result['written']} hours written"))
+        areas = Area.objects.filter(is_active=True)
+        areas = areas if options["all_areas"] else areas.filter(slug=options["area"])
+        if not areas:
+            raise CommandError(f"Unknown area: {options['area']}")
+        for area in areas:
+            try:
+                result = ingest_air_forecast(area)
+            except AirQualityIngestionError as exc:
+                raise CommandError(f"{area.slug}: {exc}") from exc
+            self.stdout.write(self.style.SUCCESS(f"{area.slug}: {result['written']} air forecast hours"))

@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Civic Climate Intelligence API
+  title: Aaboh API
   version: 0.1.0
   description: Public environmental intelligence for Kolkata. Responses separate observation,
     forecast, prediction, official warning and community report; source and freshness
@@ -202,6 +202,35 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/auth/change-password/:
+    post:
+      operationId: v1_auth_change_password_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+          description: ''
   /api/v1/auth/login/:
     post:
       operationId: v1_auth_login_create
@@ -243,6 +272,54 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/auth/password-reset/:
+    post:
+      operationId: v1_auth_password_reset_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/password-reset/confirm/:
+    post:
+      operationId: v1_auth_password_reset_confirm_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
   /api/v1/auth/register/:
     post:
       operationId: v1_auth_register_create
@@ -271,6 +348,43 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthToken'
           description: ''
+  /api/v1/auth/verify-email/:
+    post:
+      operationId: v1_auth_verify_email_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/verify-email/resend/:
+    post:
+      operationId: v1_auth_verify_email_resend_create
+      description: APIView whose response schema is explicitly documented as a JSON
+        object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/climate/metrics/:
     get:
       operationId: v1_climate_metrics_retrieve
@@ -358,6 +472,25 @@ paths:
       operationId: v1_environment_observations_retrieve
       description: APIView whose response schema is explicitly documented as a JSON
         object.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/environment/terrain/:
+    get:
+      operationId: v1_environment_terrain_retrieve
+      description: Low-lying ground by grid cell. Shows where water could gather,
+        not where it will.
       tags:
       - v1
       security:
@@ -1216,6 +1349,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: ''
+    delete:
+      operationId: v1_users_me_destroy
+      description: Delete the account. Public reports stay, with no link back to the
+        person.
+      tags:
+      - v1
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/users/me/impact/:
     get:
       operationId: v1_users_me_impact_retrieve
@@ -1661,6 +1806,20 @@ components:
         * `transport_disruption` - Transport disruption
         * `environmental_hazard` - Environmental hazard
         * `other` - Other environmental incident
+    ChangePasswordRequest:
+      type: object
+      properties:
+        current_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - current_password
+      - new_password
     CommunitySpot:
       type: object
       properties:
@@ -1811,7 +1970,6 @@ components:
           type: string
           maxLength: 200
       required:
-      - area
       - category
       - latitude
       - longitude
@@ -1869,7 +2027,6 @@ components:
           writeOnly: true
           maxItems: 4
       required:
-      - area
       - category
       - latitude
       - longitude
@@ -2290,12 +2447,14 @@ components:
       enum:
       - city
       - district
+      - zone
       - ward
       - neighbourhood
       type: string
       description: |-
         * `city` - City / municipal corporation
         * `district` - District
+        * `zone` - City zone
         * `ward` - Ward
         * `neighbourhood` - Neighbourhood
     LoginRequest:
@@ -2376,6 +2535,32 @@ components:
         * `two_wheeler` - Two-wheelers can pass
         * `walk` - Walking only
         * `none` - Not passable
+    PasswordResetConfirmRequest:
+      type: object
+      properties:
+        uid:
+          type: string
+          minLength: 1
+        token:
+          type: string
+          minLength: 1
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - new_password
+      - token
+      - uid
+    PasswordResetRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
     PatchedIncidentEditRequest:
       type: object
       properties:
@@ -2558,6 +2743,9 @@ components:
         display_name:
           type: string
           maxLength: 80
+        email_verified:
+          type: boolean
+          readOnly: true
         role:
           allOf:
           - $ref: '#/components/schemas/RoleEnum'
@@ -2576,10 +2764,19 @@ components:
       required:
       - date_joined
       - email
+      - email_verified
       - id
       - is_moderator
       - preferences
       - role
+    VerifyEmailRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+      required:
+      - token
     WaterDepthEnum:
       enum:
       - ankle

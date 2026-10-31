@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useToday } from "../api/queries";
 import type { SignalLevel, TodayResponse, TodayTip } from "../api/types";
 import { useTemperatureUnit } from "../auth/context";
+import { AgreementChip } from "../components/weather/ForecastConfidence";
 import { LiveCityMap } from "../components/live/LiveCityMap";
 import { NearMeButton } from "../components/place/NearMeButton";
 import { PlaceSearch } from "../components/place/PlaceSearch";
@@ -11,8 +12,10 @@ import { SavedPlaces } from "../components/place/SavedPlaces";
 import { StateBadge } from "../components/ui/DataState";
 import { ErrorState, LoadingPanel } from "../components/ui/Feedback";
 import { ShareButton } from "../components/ui/ShareButton";
+import { TopicIcon } from "../components/ui/Icon";
 import { cn, formatHour, formatTemperature, formatTime, formatWithUnit } from "../lib/format";
 import { useT } from "../lib/i18n";
+import { usePreferences } from "../lib/preferences";
 
 const PLACE_KEY = "climatesense.place";
 
@@ -22,14 +25,13 @@ interface HomePlace {
   label: string;
 }
 
-const DEFAULT_PLACE: HomePlace = { area: "kolkata", neighbourhood: null, label: "Kolkata" };
-
-function storedPlace(): HomePlace {
+function storedPlace(area: string): HomePlace {
+  const fallback = { area, neighbourhood: null, label: "" };
   try {
-    const raw = localStorage.getItem(PLACE_KEY);
-    return raw ? (JSON.parse(raw) as HomePlace) : DEFAULT_PLACE;
+    const stored = JSON.parse(localStorage.getItem(PLACE_KEY) ?? "null") as HomePlace | null;
+    return stored?.area === area ? stored : fallback;
   } catch {
-    return DEFAULT_PLACE;
+    return fallback;
   }
 }
 
@@ -70,7 +72,7 @@ function Tile({
 }) {
   return (
     <Link to={to} className={cn("block rounded-xl border p-4 transition hover:border-ink-300", LEVEL_TONE[level])}>
-      <p className="text-xs font-medium opacity-80">{label}</p>
+      <p className="flex items-center gap-1.5 text-xs font-medium opacity-80"><TopicIcon text={label} />{label}</p>
       <p className="mt-1 text-2xl font-semibold leading-tight">{value}</p>
       {detail ? <p className="mt-1 text-xs leading-4 opacity-80">{detail}</p> : null}
     </Link>
@@ -88,7 +90,7 @@ function TipRow({ tip }: { tip: TodayTip }) {
 
 function shareText(today: TodayResponse, line: string): string {
   const tips = today.tips.slice(0, 3).map((tip) => `• ${tip.text}`);
-  return [`Today in ${today.place.label}`, line, ...tips, "ClimateSense Kolkata"].join("\n");
+  return [`Today in ${today.place.label}`, line, ...tips, "Aaboh Kolkata"].join("\n");
 }
 
 function TodayBrief({ today }: { today: TodayResponse }) {
@@ -113,24 +115,31 @@ function TodayBrief({ today }: { today: TodayResponse }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Tile
-          label={t("Rain, next 2 hours")}
-          value={rain.total_mm === null ? t("Not available") : formatWithUnit(rain.total_mm, "mm")}
-          detail={rainLine}
-          to="/rainfall"
-        />
-        <Tile
-          label={t("Feels like, today's peak")}
-          value={heat.peak_heat_index_c === null ? t("Not available") : formatTemperature(heat.peak_heat_index_c, unit)}
-          to="/weather"
-          level={heat.level === "unknown" ? "typical" : heat.level}
-        />
-        <Tile
-          label={t("Nearest station AQI")}
-          value={air.aqi === null ? t("Not available") : String(air.aqi)}
-          to="/air-quality"
-          level={air.level === "unknown" ? "typical" : air.level}
-        />
+        {rain.total_mm === null ? null : (
+          <Tile
+            label={t("Rain, next 2 hours")}
+            value={formatWithUnit(rain.total_mm, "mm")}
+            detail={rainLine}
+            to="/rainfall"
+          />
+        )}
+        {heat.peak_heat_index_c === null ? null : (
+          <Tile
+            label={t("Feels like, today's peak")}
+            value={formatTemperature(heat.peak_heat_index_c, unit)}
+            detail={heat.uv_peak === null ? undefined : `${t("UV index")}: ${Math.round(heat.uv_peak)}`}
+            to="/weather"
+            level={heat.level === "unknown" ? "typical" : heat.level}
+          />
+        )}
+        {air.aqi === null ? null : (
+          <Tile
+            label={t("Nearest station AQI")}
+            value={String(air.aqi)}
+            to="/air-quality"
+            level={air.level === "unknown" ? "typical" : air.level}
+          />
+        )}
         <Tile
           label={t("Official warnings")}
           value={String(alerts.count)}
@@ -159,6 +168,11 @@ function TodayBrief({ today }: { today: TodayResponse }) {
 
       <div className="space-y-1 text-sm font-medium text-ink-800">
         {windowLine ? <p>{windowLine}</p> : null}
+        {today.tomorrow_agreement ? (
+          <p className="flex flex-wrap items-center gap-2">
+            {t("Tomorrow's rain forecast")}: <AgreementChip agreement={today.tomorrow_agreement} />
+          </p>
+        ) : null}
         {today.cleanest_air_window ? (
           <p>
             {t("Cleanest air: {start} to {end}", {
@@ -192,7 +206,8 @@ function TodayBrief({ today }: { today: TodayResponse }) {
 
 export function HomePage() {
   const { t } = useT();
-  const [place, setPlace] = useState<HomePlace>(storedPlace);
+  const { area, setArea } = usePreferences();
+  const [place, setPlace] = useState<HomePlace>(() => storedPlace(area));
   const today = useToday(place.area, place.neighbourhood);
   const season = today.data?.season ?? "air";
   const spotlight = SEASON_SPOTLIGHT[season];
@@ -204,12 +219,13 @@ export function HomePage() {
     } catch {
       // The place simply lasts for this visit.
     }
+    if (next.area !== area) setArea(next.area);
   }
 
   return (
     <div className="shell space-y-6 py-5 sm:py-8">
       <section>
-        <h1 className="display-title">{t("Today in {place}", { place: place.label })}</h1>
+        <h1 className="display-title">{t("Today in {place}", { place: today.data?.place.label ?? place.label })}</h1>
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <NearMeButton
             onPlace={(nearest) =>
@@ -238,14 +254,14 @@ export function HomePage() {
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {QUICK_ACTIONS.map((action) => (
           <Link key={action.to} to={action.to} className="panel p-4 transition hover:border-ink-300">
-            <p className="text-sm font-semibold text-ink-900">{t(action.label)}</p>
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"><TopicIcon text={action.label} />{t(action.label)}</p>
             <p className="mt-0.5 text-xs text-ink-500">{action.detail}</p>
           </Link>
         ))}
       </section>
 
       <Link to={spotlight.to} className="panel-muted block p-4 transition hover:border-ink-300">
-        <p className="text-sm font-semibold text-ink-950">{spotlight.title}</p>
+        <p className="flex items-center gap-1.5 text-sm font-semibold text-ink-950"><TopicIcon text={spotlight.title} />{spotlight.title}</p>
         <p className="mt-0.5 text-sm text-ink-600">{spotlight.body}</p>
       </Link>
 

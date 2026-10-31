@@ -60,7 +60,7 @@ export function RegisterPage() {
     <div className="shell max-w-5xl space-y-6 py-5 sm:py-8">
       <PageHeader
         eyebrow="Account"
-        title="Create an account to report"
+        title="Sign up"
         description="Registration is for residents who want to submit local observations and manage their own reports. It does not grant moderator status or make a report official."
         aside={<Link to="/login" className="btn-secondary text-sm">I already have an account</Link>}
       />
@@ -95,7 +95,7 @@ export function RegisterPage() {
               required
             />
             <p className="mt-1 text-xs text-ink-400">
-              Kept private. Password reset is not automated in this prototype.
+              Kept private. We'll send a link to confirm it.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -163,7 +163,7 @@ export function RegisterPage() {
             <p className="eyebrow">No official status</p>
             <p className="prose-civic mt-2">
               An account, a report or a moderator verification does not create an official warning.
-              Only source-issued IMD warnings are labelled official.
+              Only warnings issued by official sources are labelled official.
             </p>
             <Link to="/methodology" className="link mt-3 inline-block text-xs">Read the methodology</Link>
           </div>

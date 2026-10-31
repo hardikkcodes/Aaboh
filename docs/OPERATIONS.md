@@ -42,7 +42,7 @@ fabricating data.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `APP_NAME`, `APP_SHORT_NAME`, `APP_TAGLINE` | Civic Climate / CivicClimate / … | Branding returned by `/system/config/` |
+| `APP_NAME`, `APP_SHORT_NAME`, `APP_TAGLINE` | Aaboh / Aaboh / … | Branding returned by `/system/config/` |
 | `APP_SUPPORT_EMAIL` | empty | Optional public contact |
 | `FRONTEND_URL`, `PUBLIC_SITE_URL` | localhost URLs | Links in metadata and docs |
 | `DJANGO_SECRET_KEY` | insecure dev key | **Must** be set for production |

@@ -7,6 +7,10 @@ type Params = Record<string, string | number>;
 /** English text is the key, so anything untranslated stays readable. */
 const BENGALI: Record<string, string> = {
   Today: "আজ",
+  Learn: "জানুন",
+  "Tomorrow's rain forecast": "আগামীকালের বৃষ্টির পূর্বাভাস",
+  "UV index": "ইউভি সূচক",
+  "tip.high_uv": "ইউভি সূচক {uv} পর্যন্ত উঠবে। দুপুরে ছায়া, টুপি ও সানস্ক্রিন ব্যবহার করুন।",
   "Next 12 hours": "পরের ১২ ঘণ্টা",
   "Cool spots": "ঠান্ডা জায়গা",
   "Model status": "মডেলের অবস্থা",

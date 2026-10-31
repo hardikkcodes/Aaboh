@@ -1,0 +1,16 @@
+{
+  "target": "lst_c",
+  "unit": "degrees_celsius",
+  "split": "chronological_holdout",
+  "test_start": "2026-01-09",
+  "n_train_rows": 14825,
+  "n_test_rows": 3643,
+  "n_train_dates": 65,
+  "n_test_dates": 17,
+  "mae_c": 1.5433,
+  "rmse_c": 2.1245,
+  "r2": 0.8584,
+  "mean_error_c": 1.0498,
+  "baseline_cell_month_mae_c": 3.0797,
+  "note": "Metrics describe the held-out chronological period only. They are not an official accuracy claim and do not imply air-temperature accuracy."
+}

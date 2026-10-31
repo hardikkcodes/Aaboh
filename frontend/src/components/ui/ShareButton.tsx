@@ -1,3 +1,4 @@
+import { Share2 } from "lucide-react";
 import { useState } from "react";
 
 import { useT } from "../../lib/i18n";
@@ -23,6 +24,7 @@ export function ShareButton({ title, text, label }: { title: string; text: strin
 
   return (
     <button type="button" className="btn-secondary !px-3 !py-1.5 text-xs" onClick={() => void share()}>
+      <Share2 className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
       {copied ? t("Copied") : label ?? t("Share")}
     </button>
   );

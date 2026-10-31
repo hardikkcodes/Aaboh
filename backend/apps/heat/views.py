@@ -13,7 +13,17 @@ from .serializers import CellPredictionSerializer, ModelVersionSerializer, Predi
 
 def _area(request) -> Area | None:
     slug = request.query_params.get("area", "kolkata")
-    return Area.objects.filter(slug=slug, is_active=True).first()
+    area = Area.objects.filter(slug=slug, is_active=True).first()
+    return area.data_area if area else None
+
+
+def _nearest_place(cell, places) -> str:
+    nearest = min(
+        places,
+        key=lambda place: (place.latitude - cell.centroid_lat) ** 2 + (place.longitude - cell.centroid_lon) ** 2,
+        default=None,
+    )
+    return nearest.name if nearest else cell.code
 
 
 class HeatPredictionsView(DocumentedAPIView):
@@ -34,10 +44,7 @@ class HeatPredictionsView(DocumentedAPIView):
         )
         if run is None:
             active = ModelVersion.objects.filter(task="lst_estimation", is_operational=True).first()
-            reason = (
-                "No completed prediction run exists for this area. The ML pipeline is documented but "
-                "has not been trained/registered with an evaluated artifact."
-            )
+            reason = "No completed prediction run exists for this area, so no estimates are shown."
             if active:
                 reason = "A model is registered but no completed prediction run exists for this area."
             return Response(
@@ -87,13 +94,14 @@ class HeatHotspotsView(DocumentedAPIView):
                     "threshold_c": None,
                     "count": 0,
                     "results": [],
-                    "reason": "No land-surface-temperature observations are available. See the satellite data blocker.",
+                    "reason": "Satellite heat maps cover Kolkata for now. No observations are stored for this area.",
                 }
             )
         observations = list(
             base.filter(observed_on=latest_date).select_related("cell", "scene").order_by("-lst_c")
         )
         values = sorted(obs.lst_c for obs in observations)
+        places = list(area.neighbourhoods.filter(is_active=True))
         if not values:
             threshold = None
             hotspots = []
@@ -111,6 +119,7 @@ class HeatHotspotsView(DocumentedAPIView):
                 "results": [
                     {
                         "cell_code": obs.cell.code,
+                        "place": _nearest_place(obs.cell, places),
                         "geometry": obs.cell.geometry,
                         "centroid": obs.cell.centroid,
                         "lst_c": obs.lst_c,

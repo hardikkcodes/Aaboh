@@ -60,7 +60,7 @@ export function normalizeError(error: unknown): NormalizedError {
     if (!axiosError.response) {
       return {
         code: "network_error",
-        message: "Cannot reach the ClimateSense API. Is the backend running?",
+        message: "Cannot reach the Aaboh API. Is the backend running?",
         details: null,
         status: null,
       };

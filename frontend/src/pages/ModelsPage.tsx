@@ -32,6 +32,7 @@ export function ModelsPage() {
   const { t } = useT();
   const status = useModelStatus();
   const trained = status.data?.trained;
+  const surfaceHeat = status.data?.surface_heat;
 
   if (status.isError) {
     return <div className="shell py-8"><ErrorState error={status.error} onRetry={() => void status.refetch()} /></div>;
@@ -71,6 +72,18 @@ export function ModelsPage() {
           <ul className="list-disc space-y-1 pl-5 text-xs leading-5 text-ink-500">
             {trained.limitations.map((item) => <li key={item}>{item}</li>)}
           </ul>
+        </section>
+      ) : null}
+
+      {surfaceHeat ? (
+        <section className="space-y-3">
+          <h2 className="section-title">Trained on real satellite images</h2>
+          <Result
+            name="Land-surface heat in Kolkata (1 km)"
+            outcome={`${surfaceHeat.mae_c}°C typical error`}
+            passed={surfaceHeat.mae_c < surfaceHeat.baseline_cell_month_mae_c}
+            detail={`Each place's past average for that month gives ${surfaceHeat.baseline_cell_month_mae_c}°C. Tested on ${surfaceHeat.n_test_dates} later dates after learning from ${surfaceHeat.n_train_dates}. This is ground temperature, not air temperature, and it isn't shown to residents as a prediction.`}
+          />
         </section>
       ) : null}
 

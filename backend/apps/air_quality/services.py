@@ -31,7 +31,7 @@ def ingest_air_forecast(area: Area) -> dict:
         source=source, status=IngestionRunStatus.RUNNING, params={"area": area.slug}
     )
     try:
-        hourly = open_meteo.fetch_air_forecast(area.centroid_lat, area.centroid_lon).get("hourly") or {}
+        hourly = open_meteo.fetch_air_forecast(*area.focus).get("hourly") or {}
         retrieved_at = timezone.now()
         written = 0
         for valid_time, pm25, pm10 in zip(hourly["time"], hourly["pm2_5"], hourly["pm10"], strict=True):

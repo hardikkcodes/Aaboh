@@ -14,9 +14,9 @@ import {
   useUpdatePreferences,
 } from "../api/queries";
 import { useAuth } from "../auth/context";
+import { AccountSecurity } from "../components/account/AccountSecurity";
 import { AlertSettings } from "../components/account/AlertSettings";
 import { LocationPicker } from "../components/map/CivicMap";
-import { StateBadge } from "../components/ui/DataState";
 import { EmptyState, ErrorState, InlineSpinner, LoadingPanel } from "../components/ui/Feedback";
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionHeading } from "../components/ui/SectionHeading";
@@ -396,16 +396,11 @@ function AccountContent() {
         )}
       </section>
 
-      <div className="panel-muted flex flex-wrap items-center justify-between gap-3 p-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Account data</p>
-          <p className="mt-1 text-xs leading-5 text-ink-500">
-            Saved locations and preferences are private. Public reports never include your email or
-            display name. There is no automated data-export or deletion flow in this prototype.
-          </p>
-        </div>
-        <StateBadge state={myReports.data ? "AVAILABLE" : "PARTIAL"} />
-      </div>
+      <AccountSecurity />
+
+      <p className="text-xs leading-5 text-ink-500">
+        Saved locations and preferences are private. Public reports never include your email or display name.
+      </p>
     </div>
   );
 }
@@ -441,7 +436,7 @@ export function AccountPage() {
     <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
         eyebrow="Account"
-        title="Your ClimateSense account"
+        title="Your Aaboh account"
         description="Manage the private details attached to your reports. Your identity is never part of the public record."
       />
       <AccountContent />

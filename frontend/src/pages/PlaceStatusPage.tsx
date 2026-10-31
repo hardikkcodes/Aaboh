@@ -107,6 +107,7 @@ export function PlaceStatusPage() {
   const status = data.status;
   const tone = STATUS_TONE[status.level];
   const water = data.waterlogging;
+  const groundHeight = water.inputs.find((input) => input.key === "terrain")?.value as number | undefined;
   const risk = RISK_TONE[water.level];
   const current = data.weather.record;
   const reportQuery = new URLSearchParams({
@@ -188,35 +189,29 @@ export function PlaceStatusPage() {
           detail={`${water.points} of ${water.max_points} points · ${water.reports.verified} verified / ${water.reports.unverified} unverified reports nearby`}
           tone={water.level === "high" ? "alert" : water.level === "elevated" ? "warm" : "default"}
         />
-        <StatCard
+        {data.rain.next_24h_max_probability_pct === null ? null : <StatCard
           label="Rain next 24 h"
           value={formatWithUnit(data.rain.next_24h_total_mm, "mm")}
           detail={
-            data.rain.next_24h_max_probability_pct === null
-              ? data.rain.reason ?? "Forecast unavailable"
-              : `Peak ${formatWithUnit(data.rain.peak_hour_mm, "mm")} around ${formatDateTime(data.rain.peak_hour)} · ${formatNumber(data.rain.next_24h_max_probability_pct)}% chance`
+            `Peak ${formatWithUnit(data.rain.peak_hour_mm, "mm")} around ${formatDateTime(data.rain.peak_hour)} · ${formatNumber(data.rain.next_24h_max_probability_pct)}% chance`
           }
-        />
-        <StatCard
+        />}
+        {data.heat.air.value_c === null ? null : <StatCard
           label="Heat stress"
           value={formatTemperature(data.heat.air.value_c, unit)}
           detail={
             data.heat.air.value_label
               ? `${titleCase(data.heat.air.value_label)} · ${titleCase(data.heat.air.level)} band`
-              : data.heat.air.reason ?? "No current temperature record"
+              : undefined
           }
           tone={data.heat.air.level === "warning" ? "alert" : data.heat.air.level === "caution" ? "warm" : "default"}
-        />
-        <StatCard
+        />}
+        {data.air_quality.measurement?.aqi == null ? null : <StatCard
           label="Nearest CPCB station"
-          value={data.air_quality.measurement?.aqi != null ? `AQI ${data.air_quality.measurement.aqi}` : "Unavailable"}
-          detail={
-            data.air_quality.measurement
-              ? `${data.air_quality.measurement.aqi_category} · ${data.air_quality.station?.name ?? "Station"} · ${formatRelative(data.air_quality.measurement.measured_at)}`
-              : data.air_quality.reason ?? "No station measurement nearby"
-          }
+          value={`AQI ${data.air_quality.measurement.aqi}`}
+          detail={`${data.air_quality.measurement.aqi_category} · ${data.air_quality.station?.name ?? "Station"} · ${formatRelative(data.air_quality.measurement.measured_at)}`}
           tone={data.air_quality.level === "warning" ? "alert" : data.air_quality.level === "caution" ? "warm" : "default"}
-        />
+        />}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
@@ -309,14 +304,14 @@ export function PlaceStatusPage() {
                   {formatTemperature(data.heat.air.value_c, unit)} · {titleCase(data.heat.air.level)}. {data.heat.air.note}
                 </p>
               </div>
-              <div>
-                <p className="font-medium text-ink-900">Land surface</p>
-                <p className="text-xs leading-5 text-ink-600">
-                  {data.heat.land_surface.nearest_cell_lst_c !== null
-                    ? `${formatTemperature(data.heat.land_surface.nearest_cell_lst_c, unit)} at ${data.heat.land_surface.nearest_cell_code} · scene ${data.heat.land_surface.latest_date}`
-                    : data.heat.land_surface.reason ?? data.heat.land_surface.note}
-                </p>
-              </div>
+              {data.heat.land_surface.nearest_cell_lst_c !== null ? (
+                <div>
+                  <p className="font-medium text-ink-900">Land surface</p>
+                  <p className="text-xs leading-5 text-ink-600">
+                    {formatTemperature(data.heat.land_surface.nearest_cell_lst_c, unit)} · {data.heat.land_surface.latest_date}
+                  </p>
+                </div>
+              ) : null}
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <SignalChip level={data.heat.air.level} label={`Air: ${titleCase(data.heat.air.level)}`} />
@@ -334,7 +329,7 @@ export function PlaceStatusPage() {
               <ul className="mt-3 space-y-2">
                 {data.alerts.results.map((alert) => (
                   <li key={alert.id} className="rounded-xl border border-ink-100 p-3">
-                    <p className="text-sm font-medium text-ink-900">{alert.title}</p>
+                    <p data-original-text className="text-sm font-medium text-ink-900">{alert.title}</p>
                     <p className="mt-1 text-xs text-ink-500">
                       {alert.hazard_label} · {alert.severity_label} · issued {formatRelative(alert.issued_at)}
                     </p>
@@ -352,7 +347,7 @@ export function PlaceStatusPage() {
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
+      <section>
         <div className="panel p-5 sm:p-6">
           <SectionHeading
             eyebrow={`${data.reports.radius_km} km · last ${data.reports.window_hours} h`}
@@ -399,44 +394,29 @@ export function PlaceStatusPage() {
           )}
         </div>
 
-        <div className="panel p-5 sm:p-6">
-          <SectionHeading eyebrow="Coverage" title="What exists for this place" />
-          <p className="mt-2 text-xs leading-5 text-ink-500">
-            {data.coverage.available} of {data.coverage.total} modules have a recent record
-            {data.coverage.stale ? `, ${data.coverage.stale} are stale` : ""}
-            {data.coverage.partial ? `, ${data.coverage.partial} are partial` : ""}
-            {data.coverage.unavailable ? `, ${data.coverage.unavailable} are unavailable` : ""}. The
-            headline confidence is <span className="font-semibold">{data.coverage.confidence}</span>. Missing
-            modules are shown as missing, never filled with invented values.
-          </p>
-          <ul className="mt-4 space-y-2">
-            {data.coverage.modules.map((module) => (
-              <li key={module.key} className="flex items-start justify-between gap-3 rounded-xl border border-ink-100 px-3 py-2">
-                <div>
-                  <p className="text-sm text-ink-700">{module.label}</p>
-                  {module.updated_at ? (
-                    <p className="mt-0.5 text-[0.68rem] text-ink-500">
-                      Last record {formatRelative(module.updated_at)}
-                    </p>
-                  ) : null}
-                </div>
-                <StateBadge state={module.state} />
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 text-xs leading-5 text-ink-500">{data.disclaimer}</p>
-          <Link to="/methodology" className="mt-2 inline-block text-xs font-medium text-ink-700 underline">
-            How this is calculated
-          </Link>
-        </div>
+        <p className="mt-3 text-xs leading-5 text-ink-500">
+          {data.disclaimer}{" "}
+          <Link to="/methodology" className="font-medium text-ink-700 underline">How this is calculated</Link>
+        </p>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-3">
+        {groundHeight !== undefined ? (
+          <div className="panel p-4">
+            <p className="eyebrow">Your ground</p>
+            <p className="mt-2 text-sm text-ink-800">
+              {groundHeight < 0
+                ? `About ${Math.abs(groundHeight).toFixed(1)} m lower than nearby land`
+                : `About ${groundHeight.toFixed(1)} m higher than nearby land`}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-ink-500">From satellite elevation for the nearest 1 km. Water gathers on lower ground first.</p>
+          </div>
+        ) : null}
         <div className="panel p-4">
           <p className="eyebrow">Rain in the last 48 h</p>
           <p className="mt-2 text-sm text-ink-800">
             {data.recent_rain.max_daily_mm === null
-              ? "No recent daily rainfall records"
+              ? "No rain recorded"
               : `Highest day ${formatWithUnit(data.recent_rain.max_daily_mm, "mm")} · total ${formatWithUnit(data.recent_rain.total_mm, "mm")} across ${data.recent_rain.days_covered} day(s)`}
           </p>
           <p className="mt-1 text-xs leading-5 text-ink-500">{data.recent_rain.note}</p>

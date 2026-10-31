@@ -36,6 +36,8 @@ REQUIRED_FIELDS = {
     "valid_pixel_fraction",
 }
 VARIABLES = ("lst_c", "ndvi", "ndbi", "mndwi")
+MIN_LST_C = -30
+MAX_LST_C = 80
 
 
 def _float(value: str | None) -> float | None:
@@ -45,6 +47,13 @@ def _float(value: str | None) -> float | None:
         return float(value)
     except (TypeError, ValueError) as exc:
         raise SatelliteIngestionError(f"Expected a number, received {value!r}") from exc
+
+
+def _plausible(values: dict) -> bool:
+    """Reject physically impossible readings, which fill values can produce."""
+    if not MIN_LST_C <= values["lst_c"] <= MAX_LST_C:
+        return False
+    return all(values[name] is None or -1 <= values[name] <= 1 for name in ("ndvi", "ndbi", "mndwi"))
 
 
 def _acquired_at(row: dict, observed_on: date) -> tuple[datetime, bool]:
@@ -163,7 +172,7 @@ def ingest_landsat_observations(
                     continue
 
                 values = {variable: _float(row.get(variable)) for variable in VARIABLES}
-                if values["lst_c"] is None:
+                if values["lst_c"] is None or not _plausible(values):
                     skipped += 1
                     continue
 

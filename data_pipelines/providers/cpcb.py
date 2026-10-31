@@ -26,7 +26,7 @@ from zoneinfo import ZoneInfo
 import requests
 
 IST = ZoneInfo("Asia/Kolkata")
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ClimateSense/0.1"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Aaboh/0.1"
 POLLUTANT_MAP = {
     "pm2.5": "pm25",
     "pm25": "pm25",

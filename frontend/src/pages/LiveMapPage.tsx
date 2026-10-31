@@ -2,9 +2,11 @@ import { Link, useLocation } from "react-router-dom";
 
 import { usePlaceStatus, useReportHistory } from "../api/queries";
 import { LiveCityMap } from "../components/live/LiveCityMap";
+import { useT } from "../lib/i18n";
 import { formatWithUnit } from "../lib/format";
 
 export function LiveMapPage() {
+  const { t } = useT();
   const location = useLocation();
   const reported = Boolean((location.state as { reported?: boolean } | null)?.reported);
   const place = usePlaceStatus();
@@ -13,7 +15,7 @@ export function LiveMapPage() {
 
   return (
     <div className="shell space-y-4 py-4 sm:py-8">
-      <h1 className="font-display text-2xl text-ink-950 sm:text-3xl">Live in Kolkata</h1>
+      <h1 className="display-title">{t("Live map")}</h1>
 
       {reported ? (
         <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">

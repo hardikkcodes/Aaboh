@@ -1,5 +1,9 @@
 const KOLKATA_TZ = "Asia/Kolkata";
 
+function locale(): string {
+  return document.documentElement.lang === "bn" ? "bn-IN" : "en-IN";
+}
+
 export function parseDate(value: string | null | undefined): Date | null {
   if (!value) return null;
   const date = new Date(value);
@@ -9,7 +13,7 @@ export function parseDate(value: string | null | undefined): Date | null {
 export function formatDateTime(value: string | null | undefined): string {
   const date = parseDate(value);
   if (!date) return "—";
-  return new Intl.DateTimeFormat("en-IN", {
+  return new Intl.DateTimeFormat(locale(), {
     timeZone: KOLKATA_TZ,
     day: "numeric",
     month: "short",
@@ -23,7 +27,7 @@ export function formatDateTime(value: string | null | undefined): string {
 export function formatDate(value: string | null | undefined): string {
   const date = parseDate(value);
   if (!date) return "—";
-  return new Intl.DateTimeFormat("en-IN", {
+  return new Intl.DateTimeFormat(locale(), {
     timeZone: KOLKATA_TZ,
     day: "numeric",
     month: "short",
@@ -34,7 +38,7 @@ export function formatDate(value: string | null | undefined): string {
 export function formatDay(value: string | null | undefined): string {
   const date = parseDate(value);
   if (!date) return "—";
-  return new Intl.DateTimeFormat("en-IN", {
+  return new Intl.DateTimeFormat(locale(), {
     timeZone: KOLKATA_TZ,
     weekday: "short",
     day: "numeric",
@@ -45,7 +49,7 @@ export function formatDay(value: string | null | undefined): string {
 export function formatTime(value: string | null | undefined): string {
   const date = parseDate(value);
   if (!date) return "—";
-  return new Intl.DateTimeFormat("en-IN", {
+  return new Intl.DateTimeFormat(locale(), {
     timeZone: KOLKATA_TZ,
     hour: "2-digit",
     minute: "2-digit",
@@ -56,7 +60,7 @@ export function formatTime(value: string | null | undefined): string {
 export function formatHour(value: string | null | undefined): string {
   const date = parseDate(value);
   if (!date) return "—";
-  return new Intl.DateTimeFormat("en-IN", {
+  return new Intl.DateTimeFormat(locale(), {
     timeZone: KOLKATA_TZ,
     hour: "numeric",
     hour12: true,
@@ -68,7 +72,7 @@ export function formatRelative(value: string | null | undefined): string {
   if (!date) return "never";
   const diffMs = date.getTime() - Date.now();
   const diffMinutes = Math.round(diffMs / 60_000);
-  const formatter = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const formatter = new Intl.RelativeTimeFormat(locale(), { numeric: "auto" });
   if (Math.abs(diffMinutes) < 60) return formatter.format(diffMinutes, "minute");
   const diffHours = Math.round(diffMinutes / 60);
   if (Math.abs(diffHours) < 48) return formatter.format(diffHours, "hour");
@@ -81,7 +85,7 @@ export function formatRelative(value: string | null | undefined): string {
 
 export function formatNumber(value: number | null | undefined, digits = 0): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  return new Intl.NumberFormat("en-IN", {
+  return new Intl.NumberFormat(locale(), {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   }).format(value);

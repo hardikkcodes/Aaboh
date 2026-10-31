@@ -1,3 +1,4 @@
+import { Menu, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 
@@ -8,8 +9,6 @@ import { NAV_GROUPS, NavIcon, NavList } from "./Navigation";
 
 const [NOW, PLAN] = NAV_GROUPS;
 const TABS = [NOW.items[0], NOW.items[1], PLAN.items[0]];
-const MORE_ICON = "M4 7h16M4 12h16M4 17h16";
-const REPORT_ICON = "M12 5v14M5 12h14";
 
 /** Thumb-reach navigation: daily destinations, reporting, and everything else in a sheet. */
 export function MobileTabs() {
@@ -32,6 +31,9 @@ export function MobileTabs() {
             <Link to={isAuthenticated ? "/account" : "/login"} className="btn-secondary mt-4 w-full">
               {isAuthenticated ? "Account" : t("Log in")}
             </Link>
+            {isAuthenticated ? null : (
+              <Link to="/register" className="btn-primary mt-2 w-full">{t("Sign up")}</Link>
+            )}
           </div>
         </div>
       ) : null}
@@ -46,22 +48,22 @@ export function MobileTabs() {
             end={tab.to === "/"}
             className={({ isActive }) => cn(tabClasses, isActive ? "text-ink-950" : "text-ink-500")}
           >
-            <NavIcon path={tab.icon} />
+            <NavIcon icon={tab.icon} />
             {t(tab.label)}
           </NavLink>
         ))}
         <Link to="/report" className={cn(tabClasses, "text-ink-950")}>
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-ink-900 text-white">
-            <NavIcon path={REPORT_ICON} />
+            <NavIcon icon={Plus} />
           </span>
           {t("Report")}
         </Link>
         <NavLink to={TABS[2].to} className={({ isActive }) => cn(tabClasses, isActive ? "text-ink-950" : "text-ink-500")}>
-          <NavIcon path={TABS[2].icon} />
+          <NavIcon icon={TABS[2].icon} />
           {t("Routes")}
         </NavLink>
         <button type="button" className={cn(tabClasses, "text-ink-500")} aria-expanded={open} onClick={() => setOpen(!open)}>
-          <NavIcon path={MORE_ICON} />
+          <NavIcon icon={Menu} />
           {t("More")}
         </button>
       </nav>

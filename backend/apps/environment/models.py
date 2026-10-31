@@ -37,6 +37,25 @@ class SatelliteScene(models.Model):
         return self.scene_id
 
 
+class CellTerrain(models.Model):
+    """The shape of the land in one grid cell. Describes ground, not flooding."""
+
+    cell = models.OneToOneField("locations.GridCell", on_delete=models.CASCADE, related_name="terrain")
+    elevation_m = models.FloatField()
+    relative_elevation_m = models.FloatField(help_text="Height against cells within 3 km.")
+    slope_deg = models.FloatField()
+    twi = models.FloatField(help_text="Topographic wetness index.")
+    depression_fraction = models.FloatField(help_text="Share of the cell in hollows 0.5 m or deeper.")
+    built_up_index = models.FloatField(null=True, blank=True)
+    susceptibility = models.FloatField(help_text="Weighted terrain score from 0 to 1; not a probability.")
+    terrain_class = models.CharField(max_length=10)
+    dem_source = models.CharField(max_length=60)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.cell_id}: {self.terrain_class}"
+
+
 class EnvironmentalObservation(models.Model):
     """Per-grid-cell aggregation of satellite-derived indices for one scene.
 

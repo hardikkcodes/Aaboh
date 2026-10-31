@@ -1,3 +1,4 @@
+import { CircleAlert, Inbox } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { fieldErrors, normalizeError } from "../../api/client";
@@ -33,8 +34,7 @@ export function ErrorState({
   const fields = fieldErrors(normalized.details);
   return (
     <div className={cn("rounded-2xl border border-red-200 bg-red-50 p-5", className)} role="alert">
-      <p className="text-sm font-semibold text-red-900">{normalized.message}</p>
-      <p className="mt-1 text-xs font-mono uppercase tracking-wide text-red-700">{normalized.code}</p>
+      <p className="flex items-center gap-2 text-sm font-semibold text-red-900"><CircleAlert className="h-4 w-4 shrink-0" aria-hidden="true" />{normalized.message}</p>
       {fields.length ? (
         <ul className="mt-3 list-disc space-y-1 pl-4 text-sm text-red-800">
           {fields.map((message) => (
@@ -64,6 +64,7 @@ export function EmptyState({
 }) {
   return (
     <div className={cn("panel-muted p-6 text-center sm:p-10", className)}>
+      <Inbox className="mx-auto mb-2 h-7 w-7 text-brand" aria-hidden="true" />
       <p className="font-display text-xl text-ink-900">{title}</p>
       <p className="prose-civic mx-auto mt-2 max-w-xl">{description}</p>
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}

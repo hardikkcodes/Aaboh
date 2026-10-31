@@ -5,19 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="ClimateSense Kolkata — civic climate intelligence with source-aware weather, heat, rainfall, air-quality and community layers."
+      content="Aaboh Kolkata — civic climate intelligence with source-aware weather, heat, rainfall, air-quality and community layers."
     />
-    <meta name="theme-color" content="#243733" />
+    <meta name="theme-color" content="#0d4a48" />
+    <meta property="og:title" content="আবহ · Aaboh Kolkata" />
+    <meta property="og:description" content="Rain, heat, air quality and live resident reports for Kolkata and the 24 Parganas." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icon-512.png" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Galada&display=swap"
       rel="stylesheet"
     />
-    <title>ClimateSense Kolkata</title>
+    <script>
+      try {
+        const theme = localStorage.getItem("climatesense.theme");
+        if (theme === "dark" || (theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches)) {
+          document.documentElement.classList.add("dark");
+        }
+      } catch {}
+    </script>
+    <title>আবহ · Aaboh Kolkata</title>
   </head>
   <body>
     <div id="root"></div>

@@ -1,3 +1,4 @@
+import { TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useAlerts } from "../api/queries";
@@ -20,6 +21,9 @@ function AlertCard({ alert }: { alert: Alert }) {
   return (
     <article className="panel p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-2">
+        {alert.match === "state" ? (
+          <span className="chip border-amber-200 bg-amber-50 text-amber-800">State-level: check your district</span>
+        ) : null}
         <span className={`chip ${severityStyles[alert.severity] ?? severityStyles.unknown}`}>
           {alert.severity_label || titleCase(alert.severity)}
         </span>
@@ -32,8 +36,8 @@ function AlertCard({ alert }: { alert: Alert }) {
         <span className="ml-auto text-xs text-ink-400">Issued {formatRelative(alert.issued_at)}</span>
       </div>
 
-      <h2 className="mt-3 font-display text-2xl leading-snug text-ink-950">{alert.title}</h2>
-      <p className="prose-civic mt-2 whitespace-pre-line">{alert.description}</p>
+      <h2 data-original-text className="mt-3 flex items-start gap-2 font-display text-2xl leading-snug text-ink-950"><TriangleAlert className="mt-1 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />{alert.title}</h2>
+      <p data-original-text className="prose-civic mt-2 whitespace-pre-line">{alert.description}</p>
 
       <dl className="mt-4 grid gap-x-6 gap-y-2 text-xs sm:grid-cols-2">
         <div>
@@ -94,9 +98,9 @@ export function AlertsPage() {
   return (
     <div className="shell space-y-6 py-5 sm:py-8">
       <PageHeader
-        eyebrow="Official warnings · SACHET / NDMA"
-        title="Source-issued warnings only"
-        description="Warnings issued by IMD, CWC and State Disaster Management Authorities, as published on the NDMA SACHET platform and filtered to Kolkata. Nothing here is re-issued or downgraded. An empty feed is not proof that conditions are safe."
+        eyebrow="Official warnings"
+        title="Official warnings for your area"
+        description="Warnings from IMD, CWC and state disaster agencies, published on the national SACHET service. We show them as issued. If this list is empty, stay alert: it doesn't mean conditions are safe."
         aside={alerts.data ? <StateBadge state={alerts.data.state} /> : null}
       />
 
@@ -122,13 +126,13 @@ export function AlertsPage() {
           </DataStateNotice>
 
           {alerts.data?.count ? (
-            <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-              {alerts.data.feed_message ?? `${alerts.data.count} active official warning(s) cover the Kolkata scope.`}
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950">
+              {alerts.data.feed_message ?? `${alerts.data.count} active official warning(s).`}
             </p>
           ) : alerts.data?.state === "AVAILABLE" ? (
             <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
               {alerts.data.feed_message ??
-                "The official alert feed is reachable. No active warning covers Kolkata right now."}
+                "The official alert feed is reachable. No active warning covers this area right now."}
             </p>
           ) : null}
 
@@ -183,14 +187,14 @@ export function AlertsPage() {
             <EmptyState
               title={
                 alerts.data?.state === "AVAILABLE"
-                  ? "No active official warning covers Kolkata"
+                  ? "No active official warning covers this area"
                   : "No official warnings are available to display"
               }
               description={
                 alerts.data?.state === "AVAILABLE"
                   ? alerts.data.feed_message ??
-                    "The SACHET feed was refreshed and returned no Kolkata warning. This does not mean conditions are safe; follow IMD and KMC during severe weather."
-                  : "The official alert feed could not be read and no stored Kolkata warning is available. The platform will not fill this space with forecasts or community reports. Follow IMD and KMC directly during severe weather."
+                    "The SACHET feed was refreshed and returned no warning for this area. This does not mean conditions are safe; follow IMD and KMC during severe weather."
+                  : "The official alert feed could not be read and no stored warning for this area is available. The platform will not fill this space with forecasts or community reports. Follow IMD and KMC directly during severe weather."
               }
               action={<a className="btn-secondary" href="https://sachet.ndma.gov.in/" target="_blank" rel="noreferrer">Visit SACHET</a>}
             />
@@ -204,7 +208,7 @@ export function AlertsPage() {
               },
               {
                 title: "Scope",
-                body: "A warning may cover a district larger than Kolkata. SACHET publishes area text and a centroid, not a polygon, so alerts are matched on the published area text. Read the bulletin before acting.",
+                body: "Warnings that name your area are listed first. Some only name the state, so they are marked to check your district in the bulletin.",
               },
               {
                 title: "No warning ≠ safe",
